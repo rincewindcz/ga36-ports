@@ -47,3 +47,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: lugaru-2026.10.1.zip
+    size: 37881844
+    sha256: 67932a1378a0280fd632995b0a7841a4c23851b29095fc14e54e696adc089ad3

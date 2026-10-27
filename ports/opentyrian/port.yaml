@@ -44,3 +44,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: opentyrian-2026.10.1.zip
+    size: 285714
+    sha256: ecb5fef4c85f5439f6a538888fd45117a0c8b0311886df19c3718dfec2979066

@@ -38,3 +38,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: runuts-2026.10.1.zip
+    size: 4197923
+    sha256: ff405fb19adde3de5cbf1650b1326002e80e56b4bf6b0e77115182e4dbe21fd1

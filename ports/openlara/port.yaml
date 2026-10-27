@@ -59,3 +59,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: openlara-2026.10.1.zip
+    size: 540888
+    sha256: 6a3758140fa35d8d8cfa45b0290e6a47707b41d46bade5287d9d524d1d1c7510
