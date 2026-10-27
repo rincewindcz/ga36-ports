@@ -26,6 +26,10 @@ controls:
   - { button: START, action: "Pause" }
   - { button: SELECT, action: "Give up the level, quit from the menu" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/runuts/lib/licenses/SOURCES.txt
 

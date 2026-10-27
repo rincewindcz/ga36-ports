@@ -101,6 +101,17 @@ releases:                 # newest first
 
 Quote any `action` or `from` value that contains a comma or starts with a special character.
 
+## Screenshots
+
+640x480 PNG from `tools/drmshot` on the console, as root. Freeze the running port while
+capturing, or the shot catches a frame the GPU is still drawing:
+
+```sh
+echo 1 > /sys/fs/cgroup/appd/app/cgroup.freeze
+drmshot > shot.ppm
+echo 0 > /sys/fs/cgroup/appd/app/cgroup.freeze
+```
+
 ## Review
 
 Only `approved` ports are listed on the website; `draft` ports are listed in its `/test/` preview.

@@ -47,6 +47,10 @@ controls:
   - { button: SELECT, action: "Inventory" }
   - { button: START, action: "Pause" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/openlara/LICENSE.txt
 

@@ -32,6 +32,10 @@ controls:
   - { button: START, action: "Menu" }
   - { button: SELECT, action: "Skip a tutorial stage" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/lugaru/LICENSE.txt
   - ports/lugaru/CONTENT-LICENSE.txt
