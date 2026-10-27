@@ -118,7 +118,7 @@ Only `approved` ports are listed on the website; every port can be seen in its o
 `/preview/`.
 `review` is the starting point: the site owner can approve or reject a port on the website side
 without a commit here.
-Work on unapproved ports stays on a local branch until it is approved.
+Unapproved ports are pushed like any other: the public site leaves them out.
 
 ## License
 
