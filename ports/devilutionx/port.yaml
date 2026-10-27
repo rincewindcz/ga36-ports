@@ -42,6 +42,10 @@ controls:
   - { button: SELECT, action: "Hold for spell hotkeys" }
   - { button: START, action: "Hold for menu navigation, with SELECT game menu" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/devilutionx/LICENSE.txt
 

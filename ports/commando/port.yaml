@@ -32,6 +32,10 @@ controls:
   - { button: START, action: "Confirm, skip a briefing" }
   - { button: SELECT, action: "Skip a cut scene, quit dialog" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/commando/lib/licenses/SOURCES.txt
   - ports/commando/lib/licenses/Liberation.txt

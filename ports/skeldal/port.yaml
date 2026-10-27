@@ -40,6 +40,10 @@ controls:
   - { button: START, action: "Save, with R1 load" }
   - { button: SELECT, action: "Settings, with R1 game menu" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/skeldal/LICENSE.txt
 

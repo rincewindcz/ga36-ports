@@ -35,6 +35,10 @@ controls:
   - { button: START, action: "Confirm" }
   - { button: SELECT, action: "Menu" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/abuse/LICENSE.txt
   - ports/abuse/COPYING.GPL

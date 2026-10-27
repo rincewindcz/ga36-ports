@@ -37,6 +37,10 @@ controls:
   - { button: START, action: "Menu" }
   - { button: SELECT, action: "Pause" }
 
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
 licenses:
   - ports/xash3d/LICENSE.txt
   - ports/xash3d/LICENSE-hlsdk.txt
