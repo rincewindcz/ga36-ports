@@ -51,3 +51,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: abuse-2026.10.1.zip
+    size: 10447091
+    sha256: 50e90cd5dec53aaad88f894002c06032488d223073ec59807a9dec77999d6294

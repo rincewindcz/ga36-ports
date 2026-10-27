@@ -50,3 +50,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: xash3d-2026.10.1.zip
+    size: 4523263
+    sha256: 4b2aac00fa342731570233ec6424441dea86211ae0c270646bc1574ca356f0ee

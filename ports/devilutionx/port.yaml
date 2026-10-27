@@ -54,3 +54,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: devilutionx-2026.10.1.zip
+    size: 6352228
+    sha256: fa86e20224f7c57cb821ed274a8a8d973bc89554b0faff687344078acd641319

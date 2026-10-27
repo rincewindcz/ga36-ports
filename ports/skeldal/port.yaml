@@ -52,3 +52,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: skeldal-2026.10.1.zip
+    size: 444836
+    sha256: 27935b9a2dda363b8d7467c8ffd560723b305ba9bb19d945fda2b3e77e0f5408

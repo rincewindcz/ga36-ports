@@ -45,3 +45,6 @@ releases:
     date: 2026-10-27
     changes:
       - First release.
+    file: commando-2026.10.1.zip
+    size: 13101915
+    sha256: ff1a06a20908056433990b959af15b2dbcd644e7fdee195ea7eb902535d53842
