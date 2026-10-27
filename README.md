@@ -115,6 +115,8 @@ echo 0 > /sys/fs/cgroup/appd/app/cgroup.freeze
 ## Review
 
 Only `approved` ports are listed on the website; `draft` ports are listed in its `/test/` preview.
+`review` is the starting point: the site owner can approve or reject a port on the website side
+without a commit here.
 Work on unapproved ports stays on a local branch until it is approved.
 
 ## License
