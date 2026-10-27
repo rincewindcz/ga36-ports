@@ -1,0 +1,23 @@
+--- a/src/core.h
++++ b/src/core.h
+@@ -244,7 +244,8 @@
+     // current etnaviv driver implementation uses uncompatible Mesa GLSL compiler
+     // it produce unimplemented TRUNC/ARL instructions instead of F2I
+     // so we can't use joints indexing in the shader (see MESH_SKINNING)
+-    #ifndef _OS_GCW0
++    // Mesa lima (MALI400) exceeds the vertex shader instruction limit with it
++    #if !defined(_OS_GCW0) && !defined(MALI400)
+         #define MERGE_MODELS
+     #endif
+     #define MERGE_SPRITES
+@@ -1041,6 +1042,10 @@
+         settings.detail.setLighting (Core::Settings::MEDIUM);
+     #endif
+ 
++    #ifdef MALI400
++        settings.detail.setShadows  (Core::Settings::LOW);
++    #endif
++
+     #if defined(_OS_GCW0)
+         settings.detail.setFilter   (Core::Settings::MEDIUM);
+         settings.detail.setShadows  (Core::Settings::MEDIUM);

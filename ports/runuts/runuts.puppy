@@ -1,0 +1,6 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=R U NUTS ???
+DESCRIPTION=Counter-intuitive hexagonal blueprint hell (Love2D Jam 2026)
+ICON=/home/player/.local/share/icons/runuts.png
+COMMAND=/home/player/ports/runuts/run.sh

@@ -1,0 +1,57 @@
+title: Tomb Raider
+catalog: 4
+summary: The 1996 original on the OpenLara engine.
+tags: [action, adventure, 3d]
+status: playable
+review: draft
+accent: amber
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: OpenLara
+  url: https://github.com/XProger/OpenLara
+  commit: 3b268ca4bf986c380f44a26ffd9218bf6d376249
+  license: BSD-2-Clause
+
+data:
+  kind: user
+  sources:
+    - name: GOG
+      url: https://www.gog.com/en/game/tomb_raider_123
+      note: Tomb Raider 1+2+3 bundle.
+    - name: Steam
+      url: https://store.steampowered.com/app/224960/Tomb_Raider_I/
+    - name: Original PC CD (1996)
+      note: A disc image (.cue/.bin, .nrg) also has the music.
+  files:
+    - { from: "DATA/", to: ports/openlara/DATA/ }
+    - { from: "FMV/", to: ports/openlara/FMV/ }
+    - { from: "CD audio", to: ports/openlara/audio/1/ }
+  prepare:
+    script: prepare.py
+    usage: python3 prepare.py "path/to/your/Tomb Raider"
+    needs: [Python 3, 7-Zip, FFmpeg]
+    note: Takes a game folder, disc image or zip and writes `openlara-data/ports`.
+
+controls:
+  - { button: dpad, action: "Move" }
+  - { button: A, action: "Action, skip video" }
+  - { button: X, action: "Jump" }
+  - { button: Y, action: "Draw weapons" }
+  - { button: B, action: "Roll" }
+  - { button: R1, action: "Walk" }
+  - { button: L1, action: "Look" }
+  - { button: L2, action: "Duck" }
+  - { button: R2, action: "Dash" }
+  - { button: SELECT, action: "Inventory" }
+  - { button: START, action: "Pause" }
+
+licenses:
+  - ports/openlara/LICENSE.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

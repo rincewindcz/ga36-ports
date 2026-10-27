@@ -1,0 +1,45 @@
+title: Lugaru
+catalog: 2
+summary: Rabbit kung fu in 3D, by Wolfire Games.
+tags: [action, fighting, 3d]
+status: playable
+review: draft
+accent: green
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: OSS Lugaru
+  url: https://github.com/WolfireGames/lugaru
+  commit: 6a58b62858d9c3c3630abf00bf43075f65a09d38
+  license: GPL-2.0
+
+data:
+  kind: included
+  license: CC-BY-SA 3.0 and 4.0
+  credit: Wolfire Games, OSS Lugaru contributors
+  license_file: ports/lugaru/CONTENT-LICENSE.txt
+
+controls:
+  - { button: dpad, action: "Move" }
+  - { button: L-stick, action: "Move, cursor in menus" }
+  - { button: R-stick, action: "Camera, cursor" }
+  - { button: A, action: "Attack, click in menus" }
+  - { button: B, action: "Jump" }
+  - { button: X, action: "Draw or sheathe" }
+  - { button: Y, action: "Throw" }
+  - { button: R1, action: "Crouch" }
+  - { button: START, action: "Menu" }
+  - { button: SELECT, action: "Skip a tutorial stage" }
+
+licenses:
+  - ports/lugaru/LICENSE.txt
+  - ports/lugaru/CONTENT-LICENSE.txt
+  - ports/lugaru/lib/licenses/gl4es.txt
+  - ports/lugaru/lib/licenses/SOURCES.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

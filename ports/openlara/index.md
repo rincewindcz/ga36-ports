@@ -1,0 +1,3 @@
+- Shadows above Low are slow: Medium runs at about 18 fps.
+- Quit through the passport in the title inventory.
+- Some voice-overs are not on the CD and stay silent.

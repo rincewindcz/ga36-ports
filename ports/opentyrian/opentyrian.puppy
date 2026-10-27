@@ -1,0 +1,6 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Tyrian
+DESCRIPTION=Tyrian 2.1 (Eclipse Software, OpenTyrian)
+ICON=/home/player/.local/share/icons/opentyrian.png
+COMMAND=/home/player/ports/opentyrian/run.sh

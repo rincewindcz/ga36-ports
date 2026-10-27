@@ -1,0 +1,42 @@
+title: Tyrian
+catalog: 3
+summary: Vertical shooter from 1995.
+tags: [shooter, 2d]
+status: wip
+review: draft
+accent: violet
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: OpenTyrian
+  url: https://github.com/opentyrian/opentyrian
+  commit: 5a9d8daa2811347bec3a0c42f8da87682378f3cb
+  license: GPL-2.0
+
+data:
+  kind: user
+  sources:
+    - name: Tyrian 2.1
+      url: https://camanis.net/tyrian/tyrian21.zip
+      free: true
+  files:
+    - { from: "tyrian21/*", to: ports/opentyrian/data/ }
+
+controls:
+  - { button: dpad, action: "Move" }
+  - { button: A, action: "Fire, confirm" }
+  - { button: B, action: "Rear weapon mode, cancel" }
+  - { button: L1, action: "Left sidekick" }
+  - { button: R1, action: "Right sidekick" }
+  - { button: START, action: "Menu" }
+  - { button: SELECT, action: "Pause" }
+
+licenses:
+  - ports/opentyrian/LICENSE.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

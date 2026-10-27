@@ -1,0 +1,76 @@
+diff --git a/src/cache.h b/src/cache.h
+index d47ce3e..a1bf06e 100644
+--- a/src/cache.h
++++ b/src/cache.h
+@@ -100,7 +100,7 @@ struct ShaderCache {
+         compile(Core::passWater, Shader::WATER_SIMULATE, fx, RS_COLOR_WRITE);
+         compile(Core::passWater, Shader::WATER_DROP,     fx, RS_COLOR_WRITE);
+         compile(Core::passWater, Shader::WATER_RAYS,     fx, RS_COLOR_WRITE | RS_DEPTH_TEST);
+-        if (Core::support.derivatives) {
++        if (Core::support.derivatives && Core::support.vertexTextures) {
+             compile(Core::passWater, Shader::WATER_CAUSTICS, fx, RS_COLOR_WRITE);
+         }
+         compile(Core::passWater, Shader::WATER_COMPOSE,  fx, RS_COLOR_WRITE | RS_DEPTH_TEST);
+diff --git a/src/core.h b/src/core.h
+index e565a20..a9c41dd 100644
+--- a/src/core.h
++++ b/src/core.h
+@@ -352,6 +352,7 @@ namespace Core {
+         bool shadowSampler;
+         bool discardFrame;
+         bool derivatives;
++        bool vertexTextures;
+         bool texNPOT;
+         bool tex3D;
+         bool texRG;
+@@ -417,7 +418,7 @@ namespace Core {
+             #else
+                 if (value > LOW && !(support.texFloat || support.texHalf))
+                     value = LOW;
+-                if (value > MEDIUM && !support.derivatives)
++                if (value > MEDIUM && !(support.derivatives && support.vertexTextures))
+                     value = MEDIUM;
+                 water = value;
+             #endif
+@@ -868,6 +869,7 @@ namespace Core {
+         support.texMinSize  = 1;
+         support.texMaxLevel = true;
+         support.derivatives = true;
++        support.vertexTextures = true;
+ 
+         #ifdef USE_INFLATE
+             tinf_init();
+@@ -896,6 +898,7 @@ namespace Core {
+         LOG("  depth texture  : %s\n", support.depthTexture  ? "true" : "false");
+         LOG("  shadow sampler : %s\n", support.shadowSampler ? "true" : "false");
+         LOG("  discard frame  : %s\n", support.discardFrame  ? "true" : "false");
++        LOG("  vertex texture : %s\n", support.vertexTextures ? "true" : "false");
+         LOG("  NPOT textures  : %s\n", support.texNPOT       ? "true" : "false");
+         LOG("  3D   textures  : %s\n", support.tex3D         ? "true" : "false");
+         LOG("  RG   textures  : %s\n", support.texRG         ? "true" : "false");
+diff --git a/src/game.h b/src/game.h
+index a8a8f5e..62b4ed8 100644
+--- a/src/game.h
++++ b/src/game.h
+@@ -109,6 +109,7 @@ void loadSettings(Stream *stream, void *userData) {
+     }
+ 
+     Core::settings.version = SETTINGS_VERSION;
++    Core::settings.detail.setWater((Core::Settings::Quality)Core::settings.detail.water);
+     Core::setVSync(Core::settings.detail.vsync != 0);
+ 
+     #if defined(_GAPI_SW) || defined(_GAPI_GU)
+diff --git a/src/gapi/gl.h b/src/gapi/gl.h
+index ed3e9a8..5cf7101 100644
+--- a/src/gapi/gl.h
++++ b/src/gapi/gl.h
+@@ -1355,6 +1355,9 @@ namespace GAPI {
+             glGetIntegerv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &support.maxAniso);
+         #ifdef _GAPI_GLES
+             glGetIntegerv(GL_MAX_VARYING_VECTORS, &support.maxVectors);
++            GLint vertexTextures;
++            glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &vertexTextures);
++            support.vertexTextures = vertexTextures > 0;
+         #else
+             support.maxVectors = 16;
+         #endif

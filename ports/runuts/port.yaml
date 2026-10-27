@@ -1,0 +1,36 @@
+title: R U NUTS ???
+catalog: 1
+summary: Roll a nut through a blueprint maze. Love2D Jam 2026.
+tags: [puzzle, physics, 2d]
+status: works
+review: draft
+accent: teal
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: LÖVE 11.5
+  url: https://love2d.org
+  license: Zlib
+
+data:
+  kind: included
+  credit: Michal Genserek
+
+controls:
+  - { button: dpad, action: "Roll the nut, move in menus" }
+  - { button: A, action: "Flip gravity, select" }
+  - { button: B, action: "Restart the level" }
+  - { button: X, action: "Show or hide the ghost" }
+  - { button: Y, action: "Next theme" }
+  - { button: START, action: "Pause" }
+  - { button: SELECT, action: "Give up the level, quit from the menu" }
+
+licenses:
+  - ports/runuts/lib/licenses/SOURCES.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

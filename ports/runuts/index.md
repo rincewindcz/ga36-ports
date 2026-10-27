@@ -1,0 +1,1 @@
+- Bonus level 2 crashes the game when finished, as in the jam build.

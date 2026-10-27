@@ -1,0 +1,32 @@
+diff --git a/Source/User/Account.cpp b/Source/User/Account.cpp
+index bfc621e..351bd08 100644
+--- a/Source/User/Account.cpp
++++ b/Source/User/Account.cpp
+@@ -265,6 +265,10 @@ void Account::loadFile(string filename)
+         perror(("Couldn't load users from " + filename).c_str());
+         i_active = -1;
+     }
++    // names are typed on a keyboard, a handheld starts with a default user
++    if (accounts.empty()) {
++        add("Player");
++    }
+ }
+ 
+ void Account::saveFile(string filename)
+diff --git a/Source/User/Settings.cpp b/Source/User/Settings.cpp
+index 4890f45..4a92a29 100644
+--- a/Source/User/Settings.cpp
++++ b/Source/User/Settings.cpp
+@@ -31,9 +31,9 @@ void DefaultSettings()
+     detail = 2;
+     ismotionblur = 1;
+     usermousesensitivity = 1;
+-    newscreenwidth = kContextWidth = 1024;
+-    newscreenheight = kContextHeight = 768;
+-    fullscreen = 0;
++    newscreenwidth = kContextWidth = 640;
++    newscreenheight = kContextHeight = 480;
++    fullscreen = 1;
+     floatjump = 0;
+     autoslomo = 1;
+     decalstoggle = true;

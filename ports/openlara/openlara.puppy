@@ -1,0 +1,6 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Tomb Raider
+DESCRIPTION=Tomb Raider (OpenLara)
+ICON=/home/player/.local/share/icons/openlara.png
+COMMAND=/home/player/ports/openlara/run.sh

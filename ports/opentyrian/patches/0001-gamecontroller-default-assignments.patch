@@ -1,0 +1,108 @@
+diff --git a/src/joystick.c b/src/joystick.c
+index 39eccec..e80655c 100644
+--- a/src/joystick.c
++++ b/src/joystick.c
+@@ -260,7 +260,7 @@ void init_joysticks(void)
+ 	if (ignore_joystick)
+ 		return;
+ 	
+-	if (SDL_InitSubSystem(SDL_INIT_JOYSTICK) != 0)
++	if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) != 0)
+ 	{
+ 		logWarn("Failed to initialize SDL joystick: %s", SDL_GetError());
+ 		ignore_joystick = true;
+@@ -311,7 +311,84 @@ void deinit_joysticks(void)
+ 	
+ 	free(joystick);
+ 	
+-	SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
++	SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
++}
++
++static void bind_to_assignment(SDL_GameControllerButtonBind bind, bool negative, Joystick_assignment *assignment)
++{
++	switch (bind.bindType)
++	{
++	case SDL_CONTROLLER_BINDTYPE_BUTTON:
++		assignment->type = BUTTON;
++		assignment->num = bind.value.button;
++		break;
++	case SDL_CONTROLLER_BINDTYPE_AXIS:
++		assignment->type = AXIS;
++		assignment->num = bind.value.axis;
++		assignment->negative_axis = negative;
++		break;
++	case SDL_CONTROLLER_BINDTYPE_HAT:
++		assignment->type = HAT;
++		assignment->num = bind.value.hat.hat;
++		assignment->x_axis = (bind.value.hat.hat_mask & (SDL_HAT_LEFT | SDL_HAT_RIGHT)) != 0;
++		assignment->negative_axis = (bind.value.hat.hat_mask & (SDL_HAT_UP | SDL_HAT_LEFT)) != 0;
++		break;
++	default:
++		assignment->type = NONE;
++		break;
++	}
++}
++
++// defaults from the SDL game controller mapping: left stick and d-pad move,
++// A fire, B change fire, L1 or X left sidekick, R1 or Y right sidekick,
++// Start menu, Back pause
++static void reset_game_controller_assignments(int j)
++{
++	static const SDL_GameControllerAxis direction_axes[4] =
++	{
++		SDL_CONTROLLER_AXIS_LEFTY, SDL_CONTROLLER_AXIS_LEFTX, SDL_CONTROLLER_AXIS_LEFTY, SDL_CONTROLLER_AXIS_LEFTX
++	};
++	static const SDL_GameControllerButton direction_buttons[4] =
++	{
++		SDL_CONTROLLER_BUTTON_DPAD_UP, SDL_CONTROLLER_BUTTON_DPAD_RIGHT, SDL_CONTROLLER_BUTTON_DPAD_DOWN, SDL_CONTROLLER_BUTTON_DPAD_LEFT
++	};
++	static const SDL_GameControllerButton action_buttons[6][2] =
++	{
++		{ SDL_CONTROLLER_BUTTON_A, SDL_CONTROLLER_BUTTON_INVALID },
++		{ SDL_CONTROLLER_BUTTON_B, SDL_CONTROLLER_BUTTON_INVALID },
++		{ SDL_CONTROLLER_BUTTON_LEFTSHOULDER, SDL_CONTROLLER_BUTTON_X },
++		{ SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, SDL_CONTROLLER_BUTTON_Y },
++		{ SDL_CONTROLLER_BUTTON_START, SDL_CONTROLLER_BUTTON_INVALID },
++		{ SDL_CONTROLLER_BUTTON_BACK, SDL_CONTROLLER_BUTTON_INVALID },
++	};
++	
++	if (!SDL_IsGameController(j))
++		return;
++	
++	SDL_GameController *controller = SDL_GameControllerOpen(j);
++	if (controller == NULL)
++		return;
++	
++	for (uint d = 0; d < COUNTOF(direction_axes); d++)
++	{
++		bool negative = (d == 0 || d == 3);
++		
++		bind_to_assignment(SDL_GameControllerGetBindForAxis(controller, direction_axes[d]), negative, &joystick[j].assignment[d][0]);
++		bind_to_assignment(SDL_GameControllerGetBindForButton(controller, direction_buttons[d]), negative, &joystick[j].assignment[d][1]);
++	}
++	
++	for (uint a = 0; a < COUNTOF(action_buttons); a++)
++	{
++		for (uint i = 0; i < COUNTOF(action_buttons[a]); i++)
++		{
++			if (action_buttons[a][i] == SDL_CONTROLLER_BUTTON_INVALID)
++				joystick[j].assignment[a + 4][i].type = NONE;
++			else
++				bind_to_assignment(SDL_GameControllerGetBindForButton(controller, action_buttons[a][i]), false, &joystick[j].assignment[a + 4][i]);
++		}
++	}
++	
++	SDL_GameControllerClose(controller);
+ }
+ 
+ void reset_joystick_assignments(int j)
+@@ -352,6 +429,8 @@ void reset_joystick_assignments(int j)
+ 		}
+ 	}
+ 	
++	reset_game_controller_assignments(j);
++	
+ 	joystick[j].analog = false;
+ 	joystick[j].sensitivity = 5;
+ 	joystick[j].threshold = 5;

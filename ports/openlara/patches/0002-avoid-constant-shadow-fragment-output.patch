@@ -1,0 +1,14 @@
+diff --git a/src/shaders/shadow.glsl b/src/shaders/shadow.glsl
+index 09c30ff..2bfe410 100644
+--- a/src/shaders/shadow.glsl
++++ b/src/shaders/shadow.glsl
+@@ -57,7 +57,8 @@ R"====(
+ 		#ifdef SHADOW_COLOR
+ 			fragColor = pack(gl_FragCoord.z);
+ 		#else
+-			fragColor = vec4(1.0);
++			// a constant-only output corrupts the heap in Mesa lima (Mali-400)
++			fragColor = vec4(gl_FragCoord.z);
+ 		#endif
+ 	}
+ 

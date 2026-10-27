@@ -1,0 +1,165 @@
+diff --git a/Source/Utils/Input.cpp b/Source/Utils/Input.cpp
+index 70d47a5..a04eab4 100644
+--- a/Source/Utils/Input.cpp
++++ b/Source/Utils/Input.cpp
+@@ -20,23 +20,121 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
+ 
+ #include "Utils/Input.hpp"
+ 
+-bool keyDown[SDL_NUM_SCANCODES + 6];
+-bool keyPressed[SDL_NUM_SCANCODES + 6];
++#include <math.h>
++
++using namespace Game;
++
++extern int mainmenu;
++
++#define NUM_KEYS (SDL_NUM_SCANCODES + 6)
++
++bool keyDown[NUM_KEYS];
++bool keyPressed[NUM_KEYS];
++
++static SDL_GameController* pad;
++
++static const float padDeadZone = 0.2f;
++static const float padStickPress = 0.5f;
++static const float padLookSpeed = 450; // mouse pixels per second at full deflection
++
++static SDL_GameController* openPad()
++{
++    if (pad && SDL_GameControllerGetAttached(pad)) {
++        return pad;
++    }
++    if (pad) {
++        SDL_GameControllerClose(pad);
++        pad = nullptr;
++    }
++    if (!SDL_WasInit(SDL_INIT_GAMECONTROLLER)) {
++        SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
++    }
++    for (int i = 0; i < SDL_NumJoysticks() && !pad; i++) {
++        if (SDL_IsGameController(i)) {
++            pad = SDL_GameControllerOpen(i);
++        }
++    }
++    return pad;
++}
++
++static float padAxis(SDL_GameControllerAxis axis)
++{
++    float value = SDL_GameControllerGetAxis(pad, axis) / 32767.f;
++    if (fabs(value) < padDeadZone) {
++        return 0;
++    }
++    return value > 0 ? fmin(value, 1) : fmax(value, -1);
++}
++
++static bool padButton(SDL_GameControllerButton button)
++{
++    return SDL_GameControllerGetButton(pad, button);
++}
++
++static void hold(bool* down, int key, bool state)
++{
++    if (key >= 0 && key < NUM_KEYS && state) {
++        down[key] = true;
++    }
++}
++
++/* Pad buttons and the left stick act as the keys bound in the settings */
++static void padKeys(bool* down)
++{
++    const float x = padAxis(SDL_CONTROLLER_AXIS_LEFTX);
++    const float y = padAxis(SDL_CONTROLLER_AXIS_LEFTY);
++    const bool triggerRight = padAxis(SDL_CONTROLLER_AXIS_TRIGGERRIGHT) > padStickPress;
++
++    hold(down, forwardkey, padButton(SDL_CONTROLLER_BUTTON_DPAD_UP) || y < -padStickPress);
++    hold(down, backkey, padButton(SDL_CONTROLLER_BUTTON_DPAD_DOWN) || y > padStickPress);
++    hold(down, leftkey, padButton(SDL_CONTROLLER_BUTTON_DPAD_LEFT) || x < -padStickPress);
++    hold(down, rightkey, padButton(SDL_CONTROLLER_BUTTON_DPAD_RIGHT) || x > padStickPress);
++    hold(down, MOUSEBUTTON_LEFT, padButton(SDL_CONTROLLER_BUTTON_A));
++    hold(down, attackkey, padButton(SDL_CONTROLLER_BUTTON_A));
++    hold(down, jumpkey, padButton(SDL_CONTROLLER_BUTTON_B));
++    hold(down, drawkey, padButton(SDL_CONTROLLER_BUTTON_X));
++    hold(down, throwkey, padButton(SDL_CONTROLLER_BUTTON_Y));
++    hold(down, crouchkey, padButton(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER) || triggerRight);
++    hold(down, SDL_SCANCODE_ESCAPE, padButton(SDL_CONTROLLER_BUTTON_START));
++    hold(down, SDL_SCANCODE_TAB, padButton(SDL_CONTROLLER_BUTTON_BACK));
++}
+ 
+ void Input::Tick()
+ {
+     SDL_PumpEvents();
++    bool down[NUM_KEYS] = {};
+     int numkeys;
+     const Uint8* keyState = SDL_GetKeyboardState(&numkeys);
+-    for (int i = 0; i < numkeys; i++) {
+-        keyPressed[i] = !keyDown[i] && keyState[i];
+-        keyDown[i] = keyState[i];
++    for (int i = 0; i < numkeys && i < SDL_NUM_SCANCODES; i++) {
++        down[i] = keyState[i];
+     }
+     Uint8 mb = SDL_GetMouseState(NULL, NULL);
+     for (int i = 1; i < 6; i++) {
+-        keyPressed[SDL_NUM_SCANCODES + i] = !keyDown[SDL_NUM_SCANCODES + i] && (mb & SDL_BUTTON(i));
+-        keyDown[SDL_NUM_SCANCODES + i] = (mb & SDL_BUTTON(i));
++        down[SDL_NUM_SCANCODES + i] = (mb & SDL_BUTTON(i));
++    }
++    if (openPad()) {
++        padKeys(down);
++    }
++    for (int i = 0; i < NUM_KEYS; i++) {
++        keyPressed[i] = !keyDown[i] && down[i];
++        keyDown[i] = down[i];
++    }
++}
++
++/* The right stick moves like the mouse; in menus the left stick moves the cursor too */
++void Input::PadMotion(float seconds)
++{
++    if (!openPad()) {
++        return;
++    }
++    float x = padAxis(SDL_CONTROLLER_AXIS_RIGHTX);
++    float y = padAxis(SDL_CONTROLLER_AXIS_RIGHTY);
++    if (mainmenu) {
++        x = fmax(-1, fmin(1, x + padAxis(SDL_CONTROLLER_AXIS_LEFTX)));
++        y = fmax(-1, fmin(1, y + padAxis(SDL_CONTROLLER_AXIS_LEFTY)));
+     }
++    deltah += x * fabs(x) * padLookSpeed * seconds;
++    deltav += y * fabs(y) * padLookSpeed * seconds;
+ }
+ 
+ bool Input::isKeyDown(int k)
+diff --git a/Source/Utils/Input.hpp b/Source/Utils/Input.hpp
+index 1318557..428821a 100644
+--- a/Source/Utils/Input.hpp
++++ b/Source/Utils/Input.hpp
+@@ -37,6 +37,7 @@ class Input
+ {
+ public:
+     static void Tick();
++    static void PadMotion(float seconds);
+     static bool isKeyDown(int k);
+     static bool isKeyPressed(int k);
+     static const char* keyToChar(unsigned short which);
+diff --git a/Source/main.cpp b/Source/main.cpp
+index 76d8935..bc6fc88 100644
+--- a/Source/main.cpp
++++ b/Source/main.cpp
+@@ -24,6 +24,7 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
+ #include "Graphic/gamegl.hpp"
+ #include "Platform/Platform.hpp"
+ #include "User/Settings.hpp"
++#include "Utils/Input.hpp"
+ #include "Menu/Menu.hpp"
+ #include "Version.hpp"
+ 
+@@ -324,6 +325,7 @@ bool SetUp()
+ 
+ static void DoMouse()
+ {
++    Input::PadMotion(realmultiplier);
+ 
+     if (mainmenu || ((abs(deltah) < 10 * realmultiplier * 1000) && (abs(deltav) < 10 * realmultiplier * 1000))) {
+         deltah *= usermousesensitivity;

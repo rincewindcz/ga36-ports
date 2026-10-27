@@ -1,0 +1,6 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Lugaru
+DESCRIPTION=Lugaru HD (Wolfire Games, OSS Lugaru)
+ICON=/home/player/.local/share/icons/lugaru.png
+COMMAND=/home/player/ports/lugaru/run.sh

@@ -1,0 +1,40 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7372426..dede107 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -238,7 +238,7 @@ include_directories(
+     ${CMAKE_SOURCE_DIR}/Source
+ )
+ 
+-set(LUGARU_LIBS ${OPENAL_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARY} ${SDL2_LIBRARIES} ${OPENGL_gl_LIBRARY} ${OPENGL_glu_LIBRARY} ${VORBISFILE_LIBRARIES} ${JSONCPP_LIBRARIES} ${PLATFORM_LIBS})
++set(LUGARU_LIBS ${OPENAL_LIBRARY} ${PNG_LIBRARY} ${JPEG_LIBRARY} ${SDL2_LIBRARIES} ${OPENGL_gl_LIBRARY} ${VORBISFILE_LIBRARIES} ${JSONCPP_LIBRARIES} ${PLATFORM_LIBS})
+ 
+ 
+ ### Definitions
+diff --git a/Source/GameInitDispose.cpp b/Source/GameInitDispose.cpp
+index 85be118..2244a10 100644
+--- a/Source/GameInitDispose.cpp
++++ b/Source/GameInitDispose.cpp
+@@ -155,7 +155,9 @@ GLvoid Game::ReSizeGLScene(float fov, float pnear)
+     glMatrixMode(GL_PROJECTION);
+     glLoadIdentity();
+ 
+-    gluPerspective(fov, (GLfloat)screenwidth / (GLfloat)screenheight, pnear, viewdistance);
++    const GLdouble top = pnear * tan(fov * M_PI / 360);
++    const GLdouble right = top * screenwidth / screenheight;
++    glFrustum(-right, right, -top, top, pnear, viewdistance);
+ 
+     glMatrixMode(GL_MODELVIEW);
+     glLoadIdentity();
+diff --git a/Source/Graphic/gamegl.hpp b/Source/Graphic/gamegl.hpp
+index b824a43..95bcd86 100644
+--- a/Source/Graphic/gamegl.hpp
++++ b/Source/Graphic/gamegl.hpp
+@@ -45,7 +45,6 @@ along with Lugaru.  If not, see <http://www.gnu.org/licenses/>.
+ #else
+ #include <GL/gl.h>
+ #include <GL/glext.h>
+-#include <GL/glu.h>
+ #endif
+ 
+ using namespace std;

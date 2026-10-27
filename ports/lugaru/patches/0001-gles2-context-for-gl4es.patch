@@ -1,0 +1,27 @@
+diff --git a/Source/Game.hpp b/Source/Game.hpp
+index 8c51445..8fb2745 100644
+--- a/Source/Game.hpp
++++ b/Source/Game.hpp
+@@ -180,6 +180,7 @@ float sq(float n);
+ static __forceinline void swap_gl_buffers(void)
+ {
+     extern SDL_Window* sdlwindow;
++    glFlush(); // gl4es draws its pending glBegin/glEnd batch
+     SDL_GL_SwapWindow(sdlwindow);
+ 
+     // try to limit this to 60fps, even if vsync fails.
+diff --git a/Source/main.cpp b/Source/main.cpp
+index 4e94243..76d8935 100644
+--- a/Source/main.cpp
++++ b/Source/main.cpp
+@@ -196,6 +196,10 @@ bool SetUp()
+         SaveSettings();
+     }
+ 
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
++
+     if (SDL_GL_LoadLibrary(NULL) == -1) {
+         fprintf(stderr, "SDL_GL_LoadLibrary() failed: %s\n", SDL_GetError());
+         SDL_Quit();
