@@ -1,0 +1,17 @@
+diff --git a/src/gamma.cpp b/src/gamma.cpp
+index 792592f..40ee3de 100644
+--- a/src/gamma.cpp
++++ b/src/gamma.cpp
+@@ -90,9 +90,10 @@ void gamma_correct(palette *&pal, int force_menu)
+         old_pal = NULL;
+     }
+ 
+-    if(gs && DEFINEDP(gs->GetValue()) && !force_menu)
++    if(!force_menu)
+     {
+-        dg = lnumber_value(gs->GetValue());
++        // no dialog on the first start: darkest gray 16 is gamma 1.0, Gamma in the main menu changes it
++        dg = gs && DEFINEDP(gs->GetValue()) ? lnumber_value(gs->GetValue()) : 16;
+     }
+     else
+     {

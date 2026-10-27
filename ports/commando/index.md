@@ -1,0 +1,3 @@
+- Select and Start together quit the game.
+- Levels 6 and 14 slow down in heavy scenes.
+- Saves go to `.local/share/love/commando`.

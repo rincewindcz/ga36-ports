@@ -1,0 +1,6 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Abuse
+DESCRIPTION=Abuse (Crack dot Com, Abuse 2025 port)
+ICON=/home/player/.local/share/icons/abuse.png
+COMMAND=/home/player/ports/abuse/run.sh

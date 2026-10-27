@@ -1,0 +1,52 @@
+title: Diablo
+catalog: 9
+summary: Blizzard's 1996 action RPG on DevilutionX.
+tags: [rpg, action, 2d]
+status: wip
+review: draft
+accent: crimson
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: DevilutionX
+  url: https://github.com/diasurgical/DevilutionX
+  commit: 7223eeac9e8274fbf665b4de86fda26d3b22c52f
+  license: Sustainable Use License
+
+data:
+  kind: user
+  sources:
+    - name: Diablo shareware (spawn.mpq)
+      url: https://github.com/diasurgical/devilutionx-assets/releases/download/v2/spawn.mpq
+      free: true
+      note: The first levels of the game.
+    - name: GOG
+      url: https://www.gog.com/en/game/diablo
+      note: The full game, diabdat.mpq, and hellfire.mpq for the expansion.
+  files:
+    - { from: "spawn.mpq", to: ports/devilutionx/data/ }
+    - { from: "DIABDAT.MPQ, hellfire.mpq", to: ports/devilutionx/data/ }
+
+controls:
+  - { button: dpad, action: "Walk, with SELECT move the cursor" }
+  - { button: L-stick, action: "Walk" }
+  - { button: B, action: "Attack, talk, lift and place items" }
+  - { button: Y, action: "Open chests and doors, pick up items" }
+  - { button: X, action: "Cast the active spell" }
+  - { button: A, action: "Close menus, speedbook" }
+  - { button: L1, action: "Health potion, with SELECT left click" }
+  - { button: R1, action: "Mana potion, with SELECT right click" }
+  - { button: L2, action: "Character, with SELECT quest log" }
+  - { button: R2, action: "Inventory, with SELECT spellbook" }
+  - { button: SELECT, action: "Hold for spell hotkeys" }
+  - { button: START, action: "Hold for menu navigation, with SELECT game menu" }
+
+licenses:
+  - ports/devilutionx/LICENSE.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

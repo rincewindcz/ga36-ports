@@ -1,0 +1,6 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Diablo
+DESCRIPTION=Diablo (Blizzard North, DevilutionX)
+ICON=/home/player/.local/share/icons/devilutionx.png
+COMMAND=/home/player/ports/devilutionx/run.sh

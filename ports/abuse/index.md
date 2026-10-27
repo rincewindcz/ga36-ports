@@ -1,0 +1,2 @@
+- L3 quick saves at a save console. There is no quick load button: use Load Saved Game in the main menu.
+- Config and saves go to `.local/share/abuse/data`.

@@ -1,0 +1,2 @@
+- `run.sh gles2` or `run.sh soft` picks another renderer; the default is gles1.
+- goodluck.cfg sets the pad layout on every start, over binds changed in the menu.

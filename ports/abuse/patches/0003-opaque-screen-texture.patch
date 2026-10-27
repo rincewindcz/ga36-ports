@@ -1,0 +1,14 @@
+diff --git a/src/sdlport/video.cpp b/src/sdlport/video.cpp
+index 660a86c..4f22f43 100755
+--- a/src/sdlport/video.cpp
++++ b/src/sdlport/video.cpp
+@@ -236,7 +236,8 @@ void set_mode(int argc, char **argv)
+             throw std::runtime_error(SDL_GetError());
+         }
+ 
+-        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
++        // RGB888 (XRGB) like the screen surface: its unused byte must not become alpha on KMSDRM
++        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGB888,
+                                     SDL_TEXTUREACCESS_STREAMING,
+                                     xres, yres);
+         if (!texture)

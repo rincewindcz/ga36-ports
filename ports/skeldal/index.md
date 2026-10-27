@@ -1,0 +1,3 @@
+- No keyboard needed: click a portrait to name a hero, a save is named after the place.
+- Character creation needs three heroes with all bonus points spent before Start is enabled.
+- Leaving through the launcher opens the game's quit dialog.

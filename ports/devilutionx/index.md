@@ -1,0 +1,2 @@
+- spawn.mpq plays the shareware part; diabdat.mpq from the full game replaces it.
+- New heroes get a generated name, no keyboard needed.

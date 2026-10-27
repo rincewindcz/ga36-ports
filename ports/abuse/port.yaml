@@ -1,0 +1,49 @@
+title: Abuse
+catalog: 8
+summary: Run and gun through an alien-infested prison, by Crack dot Com.
+tags: [action, platformer, 2d]
+status: playable
+review: draft
+accent: rose
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: Abuse 2025
+  url: https://github.com/apancik/Abuse_2025
+  commit: 48bc0d079116c6429989bcf88595ef20c5c1b80f
+  license: GPL-2.0-or-later
+
+data:
+  kind: included
+  license: Public domain, music and sounds redistributable
+  credit: Crack dot Com, Bobby Prince, Justin Cassidy and others
+  license_file: ports/abuse/LICENSE.txt
+
+controls:
+  - { button: dpad, action: "Move, up jumps, down uses" }
+  - { button: L-stick, action: "Move" }
+  - { button: R-stick, action: "Aim" }
+  - { button: A, action: "Jump" }
+  - { button: B, action: "Use" }
+  - { button: R2, action: "Fire" }
+  - { button: L1, action: "Fire" }
+  - { button: L2, action: "Bullet time" }
+  - { button: R1, action: "Previous weapon" }
+  - { button: X, action: "Previous weapon" }
+  - { button: Y, action: "Next weapon" }
+  - { button: START, action: "Confirm" }
+  - { button: SELECT, action: "Menu" }
+
+licenses:
+  - ports/abuse/LICENSE.txt
+  - ports/abuse/COPYING.GPL
+  - ports/abuse/COPYING.WTFPL
+  - ports/abuse/lib/licenses/fluidsynth.txt
+  - ports/abuse/lib/licenses/SDL2_mixer.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

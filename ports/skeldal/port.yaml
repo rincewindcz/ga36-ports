@@ -1,0 +1,50 @@
+title: Gates of Skeldal
+catalog: 5
+summary: Czech dungeon crawler RPG from 1998, by Napoleon Games.
+tags: [rpg, dungeon crawler]
+status: playable
+review: draft
+accent: blue
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: Gates of Skeldal (SDL2 port)
+  url: https://github.com/ondra-novak/gates_of_skeldal
+  commit: ecf8f5c62cde4e6c4df98c68f3bfb25ab8894d9c
+  license: MIT
+
+data:
+  kind: user
+  sources:
+    - name: Steam
+      url: https://store.steampowered.com/app/3533830/
+    - name: Original CD (1998)
+      note: The DOS or Windows version files.
+  files:
+    - { from: "ADV/, MAPS/, MUSIC/, VIDEO/", to: ports/skeldal/data/ }
+    - { from: "SKELDAL.DDL, *.MUS, *.ENC, MUDW.ADV, MUDW.DOC", to: ports/skeldal/data/ }
+
+controls:
+  - { button: dpad, action: "Forward, back, turn" }
+  - { button: L-stick, action: "Walk and turn" }
+  - { button: R-stick, action: "Cursor" }
+  - { button: A, action: "Click" }
+  - { button: B, action: "Right click, cancel" }
+  - { button: X, action: "Wall action, next hero in battle" }
+  - { button: Y, action: "Start battle, confirm" }
+  - { button: L1, action: "Back" }
+  - { button: R1, action: "Modifier: battle actions, spells, inventory" }
+  - { button: L2, action: "Map" }
+  - { button: R2, action: "Split group" }
+  - { button: START, action: "Save, with R1 load" }
+  - { button: SELECT, action: "Settings, with R1 game menu" }
+
+licenses:
+  - ports/skeldal/LICENSE.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

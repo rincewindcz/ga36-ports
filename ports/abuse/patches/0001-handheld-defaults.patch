@@ -1,0 +1,49 @@
+diff --git a/src/sdlport/setup.cpp b/src/sdlport/setup.cpp
+index a507a31..2b44e76 100644
+--- a/src/sdlport/setup.cpp
++++ b/src/sdlport/setup.cpp
+@@ -94,7 +94,7 @@ bool AR_GetAttr(std::string line, std::string &attr, std::string &value)
+ Settings::Settings()
+ {
+ 	// screen
+-	this->fullscreen = 0; // start in window
++	this->fullscreen = 1; // start in fullscreen window
+ 	this->borderless = false;
+ 	this->vsync = false;
+ 	this->virtual_width = 320;
+@@ -144,7 +144,7 @@ Settings::Settings()
+ 	this->bt = key_value("CTRL_L"); // special2, bulettime
+ 
+ 	// controller settings
+-	this->ctr_aim = false; // controller overide disabled
++	this->ctr_aim = true; // sticks move and aim
+ 	this->ctr_aim_correctx = 0;
+ 	this->ctr_cd = 100;
+ 	this->ctr_rst_s = 10;
+@@ -172,7 +172,7 @@ Settings::Settings()
+ 	this->ctr_rtg = "b2";
+ 	//
+ 	this->ctr_f5 = SDL_CONTROLLER_BUTTON_LEFTSTICK;
+-	this->ctr_f9 = SDL_CONTROLLER_BUTTON_RIGHTSTICK;
++	this->ctr_f9 = SDL_CONTROLLER_BUTTON_INVALID; // a stick click reloads the level too easily
+ }
+ 
+ bool Settings::CreateConfigFile()
+@@ -293,7 +293,7 @@ bool Settings::CreateConfigFile()
+ 	fprintf(out, "weapon_prev=ctr_x\n");
+ 	fprintf(out, "weapon_next=ctr_y\n");
+ 	fprintf(out, "quick_save=ctr_left_stick\n");
+-	fprintf(out, "quick_load=ctr_right_stick\n");
++	fprintf(out, "quick_load=none\n");
+ 
+ 	fclose(out);
+ 
+@@ -489,6 +489,8 @@ bool Settings::ReadConfigFile()
+ 				b = SDL_CONTROLLER_BUTTON_LEFTSHOULDER;
+ 			else if (value == "ctr_right_shoulder")
+ 				b = SDL_CONTROLLER_BUTTON_RIGHTSHOULDER;
++			else if (value == "none")
++				b = SDL_CONTROLLER_BUTTON_INVALID;
+ 
+ 			if (attr == "quick_save")
+ 				this->ctr_f5 = b;

@@ -1,0 +1,43 @@
+title: Commando
+catalog: 7
+summary: Freeware run and gun from 2004 on a new Klik player.
+tags: [action, platformer, 2d]
+status: wip
+review: draft
+accent: green
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: Klik player on LÖVE 11.5
+  url: https://love2d.org
+  license: MIT
+
+data:
+  kind: included
+  license: Freeware, redistribution allowed
+  credit: Fallen Angel Industries
+  license_file: ports/commando/game/readme.txt
+
+controls:
+  - { button: dpad, action: "Move, menus" }
+  - { button: L-stick, action: "Move, menus" }
+  - { button: A, action: "Jump, skip a briefing" }
+  - { button: B, action: "Fire" }
+  - { button: X, action: "Satchel charge" }
+  - { button: Y, action: "Napalm" }
+  - { button: L2, action: "High explosive" }
+  - { button: L1, action: "Previous weapon" }
+  - { button: R1, action: "Next weapon" }
+  - { button: START, action: "Confirm, skip a briefing" }
+  - { button: SELECT, action: "Skip a cut scene, quit dialog" }
+
+licenses:
+  - ports/commando/lib/licenses/SOURCES.txt
+  - ports/commando/lib/licenses/Liberation.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.

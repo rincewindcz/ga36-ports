@@ -1,0 +1,48 @@
+title: Half-Life
+catalog: 6
+summary: Valve's 1998 shooter on the Xash3D FWGS engine.
+tags: [shooter, fps, 3d]
+status: playable
+review: draft
+accent: amber
+added: 2026-10-27
+icon: icon.png
+
+engine:
+  name: Xash3D FWGS
+  url: https://github.com/FWGS/xash3d-fwgs
+  commit: e8d773eaa640f65db66164afbf5b867a5544b9b0
+  license: GPL-3.0-or-later
+
+data:
+  kind: user
+  sources:
+    - name: Steam
+      url: https://store.steampowered.com/app/70/HalfLife/
+  files:
+    - { from: "valve/", to: ports/xash3d/data/valve/ }
+
+controls:
+  - { button: L-stick, action: "Move" }
+  - { button: R-stick, action: "Look" }
+  - { button: R2, action: "Fire" }
+  - { button: L2, action: "Secondary fire" }
+  - { button: R1, action: "Next weapon" }
+  - { button: L1, action: "Previous weapon" }
+  - { button: A, action: "Jump" }
+  - { button: B, action: "Use" }
+  - { button: X, action: "Reload" }
+  - { button: Y, action: "Flashlight" }
+  - { button: dpad, action: "Up last weapon, down duck, left quick save, right quick load" }
+  - { button: START, action: "Menu" }
+  - { button: SELECT, action: "Pause" }
+
+licenses:
+  - ports/xash3d/LICENSE.txt
+  - ports/xash3d/LICENSE-hlsdk.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-27
+    changes:
+      - First release.
