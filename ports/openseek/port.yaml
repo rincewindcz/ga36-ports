@@ -1,0 +1,51 @@
+title: openSEEK
+catalog: 10
+summary: Seek and Destroy remade on LÖVE, with the 1996 shareware missions.
+tags: [action, shooter, 2d]
+status: wip
+review: draft
+accent: amber
+added: 2026-10-28
+icon: icon.png
+
+engine:
+  name: openSEEK on LÖVE 11.5
+  url: https://github.com/rincewindcz/openseek
+  commit: 45c6460e401cca2491a80b6a588870e5de1c0622
+  license: MIT
+
+data:
+  kind: included
+  license: Shareware
+  credit: Safari Software, Vision Software
+  license_file: ports/openseek/SHAREWARE-LICENSE.txt
+
+controls:
+  - { button: dpad, action: "Drive and turn, menus" }
+  - { button: L-stick, action: "Drive and turn, menus" }
+  - { button: R-stick, action: "Strafe, tank turret" }
+  - { button: A, action: "Fire, select" }
+  - { button: R2, action: "Fire" }
+  - { button: B, action: "Take off and land, back in menus" }
+  - { button: Y, action: "Next weapon" }
+  - { button: R1, action: "Next weapon" }
+  - { button: X, action: "Radar zoom" }
+  - { button: L1, action: "Hold to strafe" }
+  - { button: L2, action: "Hold to strafe" }
+  - { button: START, action: "Menu" }
+  - { button: SELECT, action: "Pause" }
+
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
+licenses:
+  - ports/openseek/LICENSE.txt
+  - ports/openseek/SHAREWARE-LICENSE.txt
+  - ports/openseek/lib/licenses/SOURCES.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-28
+    changes:
+      - First release.
