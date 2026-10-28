@@ -49,3 +49,6 @@ releases:
     date: 2026-10-28
     changes:
       - First release.
+    file: openseek-2026.10.1.zip
+    size: 6452103
+    sha256: 1edc905a76a55c0d2f783e54cb38b32e35cba8df1a4a511d5599c9597988e3e9
