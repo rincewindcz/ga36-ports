@@ -1,6 +1,6 @@
 # ga36-ports
 
-Game ports for the GA36-MB V1.2 handheld (Allwinner A23) running
+Game ports for the GA36-MB handheld (Allwinner A23) running
 [goodluckOS](https://github.com/CodeZombie/goodluckOS), published at
 [ga36.genserek.net](https://ga36.genserek.net). Every port is one zip that is unpacked into the HOME root
 of the console; it appears in the Ports category of [kennel](https://github.com/rincewindcz/kennel) or
