@@ -1,3 +1,4 @@
 - The shareware data is included: missions 1 and 2.
-- The full game unlocks all five missions: convert it on a PC with openSEEK's `tools/build_pack.py` and copy the `assets` folder into `.local/share/love/openseek`.
+- The full version needs the original game data of the full Seek and Destroy, which is not included.
+- To play it, convert your copy on a PC with openSEEK's `tools/build_pack.py` and copy the `assets` folder into `.local/share/love/openseek`.
 - Saves and settings go to `.local/share/love/openseek`.
