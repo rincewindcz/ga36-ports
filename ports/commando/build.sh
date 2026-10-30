@@ -21,7 +21,7 @@ fetch_file "$ZIP_URL" "$ZIP_SHA256" "$zip"
 stage=$(stage_dir commando)
 game=$stage/ports/commando
 love_runtime "$game"
-(cd "$COMMANDO_DIR/player" && zip -qrX "$game/commando.love" main.lua conf.lua commando.lua mmf run ext fonts)
+(cd "$COMMANDO_DIR/player" && zip -qrX "$game/commando.love" *.lua mmf run ext fonts)
 
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT

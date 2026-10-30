@@ -22,15 +22,15 @@ data:
 controls:
   - { button: dpad, action: "Move, menus" }
   - { button: L-stick, action: "Move, menus" }
-  - { button: A, action: "Jump, skip a briefing" }
-  - { button: B, action: "Fire" }
+  - { button: A, action: "Jump, confirm" }
+  - { button: B, action: "Fire, back, skip a briefing" }
   - { button: X, action: "Satchel charge" }
   - { button: Y, action: "Napalm" }
   - { button: L2, action: "High explosive" }
   - { button: L1, action: "Previous weapon" }
   - { button: R1, action: "Next weapon" }
-  - { button: START, action: "Confirm, skip a briefing" }
-  - { button: SELECT, action: "Skip a cut scene, quit dialog" }
+  - { button: START, action: "Pause menu" }
+  - { button: SELECT, action: "Quit dialog" }
 
 shots:
   - { file: shots/title.png }
@@ -41,6 +41,18 @@ licenses:
   - ports/commando/lib/licenses/Liberation.txt
 
 releases:
+  - version: 2026.10.2
+    date: 2026-10-30
+    changes:
+      - Pause menu with options, statistics, practice levels and cheats.
+      - Pad buttons can be remapped, and A and B swapped in menus.
+      - The left stick works in menus, and music keeps playing quietly there.
+      - Fades between frames and a loading screen.
+      - Skip level now saves progress, so Continue resumes after the skipped level.
+      - Faster on the console, with less stutter.
+    file: commando-2026.10.2.zip
+    size: 13125190
+    sha256: ae4893fded98349264998d337515237a7921e390fb7f7d0ef7861b93d2842004
   - version: 2026.10.1
     date: 2026-10-27
     changes:
