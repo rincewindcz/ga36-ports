@@ -1,0 +1,13 @@
+diff --git a/src/utils/FileStream.h b/src/utils/FileStream.h
+index 74fac88..fa8a0d4 100644
+--- a/src/utils/FileStream.h
++++ b/src/utils/FileStream.h
+@@ -4,7 +4,7 @@
+ #include <algorithm>
+ #include <filesystem>
+ 
+-class FileStream : std::fstream {
++class FileStream : protected std::fstream {
+ public:
+     FileStream()
+         : std::fstream()

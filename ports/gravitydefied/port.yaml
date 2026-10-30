@@ -1,0 +1,44 @@
+title: Gravity Defied
+catalog: 11
+summary: C++ port of addictive J2ME motorcycle game. 
+tags: [racing, physics, 2d]
+status: playable
+review: draft
+accent: green
+added: 2026-10-30
+icon: icon.png
+
+engine:
+  name: Gravity Defied Cpp
+  url: https://github.com/rgimad/gravity_defied_cpp
+  commit: 91bd283959b96a7ea07e1c4c0040460334c85458
+  license: GPL-2.0
+
+data:
+  kind: included
+  license: Rights held by Codebrew Software, bundled by the engine repository
+  credit: Codebrew Software
+  license_file: ports/gravitydefied/LICENSE.txt
+
+controls:
+  - { button: dpad, action: "Accelerate, brake, lean, menus" }
+  - { button: L-stick, action: "Accelerate, brake, lean, menus" }
+  - { button: A, action: "Accelerate, confirm" }
+  - { button: B, action: "Brake, back" }
+  - { button: START, action: "Race menu" }
+
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+
+licenses:
+  - ports/gravitydefied/LICENSE.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-30
+    changes:
+      - First release.
+    file: gravitydefied-2026.10.1.zip
+    size: 265392
+    sha256: 03cc46affa8b572533e96cbcf74a8884f6239d2187f580c1323189fd761265c4

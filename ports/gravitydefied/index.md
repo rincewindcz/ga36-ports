@@ -1,0 +1,3 @@
+- Start opens the menu in a race, B goes back to the race.
+- Select and Start together quit the game.
+- Records go to `.GravityDefied`.

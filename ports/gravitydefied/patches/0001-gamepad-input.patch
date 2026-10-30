@@ -1,0 +1,143 @@
+diff --git a/src/lcdui/CanvasImpl.cpp b/src/lcdui/CanvasImpl.cpp
+index 7f1c807..558315d 100644
+--- a/src/lcdui/CanvasImpl.cpp
++++ b/src/lcdui/CanvasImpl.cpp
+@@ -7,6 +7,9 @@
+ #include <iostream>
+ 
+ #include "Canvas.h"
++#include "../Micro.h"
++
++static constexpr int STICK_THRESHOLD = 16000;
+ 
+ CanvasImpl::CanvasImpl(Canvas* canvas)
+ {
+@@ -44,6 +47,8 @@ CanvasImpl::CanvasImpl(Canvas* canvas)
+ 
+     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+     SDL_RenderClear(renderer);
++
++    SDL_ShowCursor(SDL_DISABLE);
+ }
+ 
+ CanvasImpl::~CanvasImpl()
+@@ -104,12 +109,100 @@ void CanvasImpl::processEvents()
+                 }
+             }
+         } break;
++        case SDL_CONTROLLERDEVICEADDED:
++            SDL_GameControllerOpen(e.cdevice.which);
++            break;
++        case SDL_CONTROLLERBUTTONDOWN:
++        case SDL_CONTROLLERBUTTONUP:
++            padButton(static_cast<SDL_GameControllerButton>(e.cbutton.button), e.type == SDL_CONTROLLERBUTTONDOWN);
++            break;
++        case SDL_CONTROLLERAXISMOTION:
++            padStick(e.caxis.axis, e.caxis.value);
++            break;
+         default:
+             break;
+         }
+     }
+ }
+ 
++// The D-pad works everywhere. In menus A confirms and B goes back; in a race A
++// accelerates, B brakes and Start opens the menu. A release frees the key its
++// press sent, even if a menu opened in between.
++void CanvasImpl::padButton(SDL_GameControllerButton button, bool down)
++{
++    if (button == SDL_CONTROLLER_BUTTON_BACK) {
++        selectHeld = down;
++        return;
++    }
++
++    if (!down) {
++        if (button == SDL_CONTROLLER_BUTTON_B && !padKeys[button]) {
++            canvas->pressedEsc();
++        } else if (padKeys[button]) {
++            canvas->publicKeyReleased(padKeys[button]);
++            padKeys[button] = 0;
++        }
++        return;
++    }
++
++    switch (button) {
++    case SDL_CONTROLLER_BUTTON_DPAD_UP:
++        padKeys[button] = Canvas::Keys::UP;
++        break;
++    case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
++        padKeys[button] = Canvas::Keys::DOWN;
++        break;
++    case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
++        padKeys[button] = Canvas::Keys::LEFT;
++        break;
++    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
++        padKeys[button] = Canvas::Keys::RIGHT;
++        break;
++    case SDL_CONTROLLER_BUTTON_A:
++        padKeys[button] = Micro::isInGameMenu ? Canvas::Keys::FIRE : Canvas::Keys::UP;
++        break;
++    case SDL_CONTROLLER_BUTTON_B:
++        padKeys[button] = Micro::isInGameMenu ? 0 : Canvas::Keys::DOWN;
++        break;
++    case SDL_CONTROLLER_BUTTON_START:
++        if (selectHeld) {
++            exit(0);
++        }
++        canvas->pressedEsc();
++        return;
++    default:
++        return;
++    }
++
++    if (padKeys[button]) {
++        canvas->publicKeyPressed(padKeys[button]);
++    }
++}
++
++void CanvasImpl::setStickKey(int slot, int keyCode, bool down)
++{
++    if (down == (stickKeys[slot] != 0)) {
++        return;
++    }
++    stickKeys[slot] = down ? keyCode : 0;
++    if (down) {
++        canvas->publicKeyPressed(keyCode);
++    } else {
++        canvas->publicKeyReleased(keyCode);
++    }
++}
++
++void CanvasImpl::padStick(int axis, int value)
++{
++    if (axis == SDL_CONTROLLER_AXIS_LEFTX) {
++        setStickKey(0, Canvas::Keys::LEFT, value < -STICK_THRESHOLD);
++        setStickKey(1, Canvas::Keys::RIGHT, value > STICK_THRESHOLD);
++    } else if (axis == SDL_CONTROLLER_AXIS_LEFTY) {
++        setStickKey(2, Canvas::Keys::UP, value < -STICK_THRESHOLD);
++        setStickKey(3, Canvas::Keys::DOWN, value > STICK_THRESHOLD);
++    }
++}
++
+ int CanvasImpl::convertKeyCharToKeyCode(SDL_Keycode keyCode)
+ {
+     switch (keyCode) {
+diff --git a/src/lcdui/CanvasImpl.h b/src/lcdui/CanvasImpl.h
+index 90c4763..883be7d 100644
+--- a/src/lcdui/CanvasImpl.h
++++ b/src/lcdui/CanvasImpl.h
+@@ -18,7 +18,14 @@ private:
+     const int width = 640;
+     const int height = 480;
+ 
++    bool selectHeld = false;
++    int padKeys[SDL_CONTROLLER_BUTTON_MAX] = {};
++    int stickKeys[4] = {};
++
+     static int convertKeyCharToKeyCode(SDL_Keycode keyCode);
++    void padButton(SDL_GameControllerButton button, bool down);
++    void padStick(int axis, int value);
++    void setStickKey(int slot, int keyCode, bool down);
+ 
+ public:
+     CanvasImpl(Canvas* canvas);

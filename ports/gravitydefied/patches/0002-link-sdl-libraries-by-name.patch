@@ -1,0 +1,15 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 06f1426..2c128ef 100755
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -15,8 +15,8 @@ endif()
+ find_package(PkgConfig REQUIRED)
+ 
+ pkg_search_module(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+-pkg_search_module(SDL2_TTF REQUIRED IMPORTED_TARGET SDL2_ttf)
+-pkg_search_module(SDL2_IMAGE REQUIRED IMPORTED_TARGET SDL2_image)
++set(SDL2_TTF_LIBRARIES SDL2_ttf)
++set(SDL2_IMAGE_LIBRARIES SDL2_image)
+ 
+ # Create a sources variable with a link to all cpp files to compile
+ set(SOURCES
