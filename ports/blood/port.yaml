@@ -57,6 +57,9 @@ releases:
     date: 2026-10-31
     changes:
       - Use the Blood box art as the icon.
+    file: blood-2026.10.3.zip
+    size: 1707596
+    sha256: f56c2f7704d794644bebefd0589eff6792cbf094d7b57b8336e05635a5c5e1bb
   - version: 2026.10.2
     date: 2026-10-31
     changes:
