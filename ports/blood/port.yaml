@@ -53,6 +53,10 @@ licenses:
   - ports/blood/LICENSE-build.txt
 
 releases:
+  - version: 2026.10.3
+    date: 2026-10-31
+    changes:
+      - Use the Blood box art as the icon.
   - version: 2026.10.2
     date: 2026-10-31
     changes:
