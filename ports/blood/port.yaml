@@ -1,0 +1,57 @@
+title: Blood
+catalog: 14
+summary: Monolith's 1997 horror shooter on NBlood, with Cryptic Passage.
+tags: [shooter, fps]
+status: wip
+review: draft
+accent: crimson
+added: 2026-10-31
+icon: icon.png
+
+engine:
+  name: NBlood
+  url: https://github.com/nukeykt/NBlood
+  commit: 497385d64b97f4fd13b6efb3929df0f2ab3adc87
+  license: GPL-2.0 and BUILD license
+
+data:
+  kind: user
+  sources:
+    - name: Blood 1.21 (DOS)
+      note: One Unit Whole Blood or the original CD; Cryptic Passage is optional.
+    - name: GOG, Blood Fresh Supply
+      url: https://www.gog.com/game/blood_fresh_supply
+      note: Needs the files of the DOS version listed below, not the remaster's own data.
+  files:
+    - { from: "BLOOD.INI, BLOOD.RFF, GUI.RFF, SOUNDS.RFF", to: ports/blood/data/ }
+    - { from: "SURFACE.DAT, VOXEL.DAT, TILES000.ART to TILES017.ART", to: ports/blood/data/ }
+    - { from: "BLOOD000.DEM to BLOOD003.DEM (optional)", to: ports/blood/data/ }
+    - { from: "CP*.MAP, CPART07.AR_, CPART15.AR_, CRYPTIC.INI, CRYPTIC.SMK, CRYPTIC.WAV (Cryptic Passage)", to: ports/blood/data/ }
+
+controls:
+  - { button: L-stick, action: "Move" }
+  - { button: R-stick, action: "Look, press to turn around" }
+  - { button: R2, action: "Fire" }
+  - { button: L2, action: "Alternate fire" }
+  - { button: R1, action: "Next weapon" }
+  - { button: L1, action: "Previous weapon" }
+  - { button: A, action: "Jump, menu confirm" }
+  - { button: B, action: "Crouch, menu back" }
+  - { button: X, action: "Open" }
+  - { button: Y, action: "Last weapon" }
+  - { button: dpad, action: "Up last weapon, down use item, left and right pick item; menu navigation" }
+  - { button: START, action: "Menu" }
+  - { button: SELECT, action: "Map" }
+
+licenses:
+  - ports/blood/LICENSE.txt
+  - ports/blood/LICENSE-build.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-31
+    changes:
+      - First release.
+    file: blood-2026.10.1.zip
+    size: 1700336
+    sha256: 1446f57cc9bd33de8e50e4afb104fd065995324a55e1f0eed17c0ef4031f2381

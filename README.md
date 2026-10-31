@@ -24,6 +24,7 @@ ship the engine and say where to get the data legally.
 | `lib/deb.sh` | signed Debian package fetch, `deb_notice` (copyright file and version of a bundled library) |
 | `lib/love-runtime.sh` | LÖVE 11.5 runtime with its libraries and license notices |
 | `lib/gl4es.sh` | gl4es (OpenGL 1.x over GLES 2) |
+| `lib/nblood.sh`, `lib/nblood-*.patch` | NBlood checkout and build shared by Blood and Powerslave |
 | `tools/package.py` | checks a stage tree against `port.yaml` and packs `build/dist/<id>-<version>.zip` |
 | `tools/drmshot.c`, `padd.c`, `glos.py` | on-device screenshot, virtual pad, serial console client |
 

@@ -1,0 +1,3 @@
+- Cryptic Passage has its own entry in the launcher and needs its files in `data/`.
+- CD music plays from `blood02.ogg` and so on in `data/`, after turning on Redbook audio in the sound menu; otherwise the music is MIDI.
+- Saves and the config are in `ports/blood`.

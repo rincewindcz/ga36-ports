@@ -1,0 +1,144 @@
+diff --git a/source/exhumed/src/config.cpp b/source/exhumed/src/config.cpp
+index 951f399..f637224 100644
+--- a/source/exhumed/src/config.cpp
++++ b/source/exhumed/src/config.cpp
+@@ -303,6 +303,45 @@ void SetupGameButtons()
+     CONTROL_DefineFlag(gamefunc_Third_Person_View,      kFalse);
+ }
+ 
++// indexed by SDL_GameControllerButton
++static const char * joystickdefaults[MAXJOYBUTTONSANDHATS] =
++{
++    "Jump",
++    "Crouch",
++    "Open",
++    "Look_Straight",
++    "Map",
++    "",
++    "Escape",
++    "",
++    "",
++    "Previous_Weapon",
++    "Next_Weapon",
++    "AutoRun",
++    "Inventory",
++    "Inventory_Left",
++    "Inventory_Right",
++};
++
++static const char * joystickanalogdefaults[MAXJOYAXES] =
++{
++    "analog_strafing",
++    "analog_moving",
++    "analog_turning",
++    "analog_lookingupanddown",
++};
++
++// the triggers are axes 4 and 5
++static const char * joystickdigitaldefaults[MAXJOYDIGITAL] =
++{
++    "", "",
++    "", "",
++    "", "",
++    "", "",
++    "", "Run",
++    "", "Fire",
++};
++
+ hashtable_t h_gamefuncs    = { kMaxGameFunctions<<1, NULL };
+ 
+ int32_t CONFIG_FunctionNameToNum(const char *func)
+@@ -524,8 +563,17 @@ void CONFIG_SetDefaults()
+         CONTROL_MapDigitalAxis(i, MouseDigitalFunctions[i][1], 1);
+     }
+ 
+-    // TODO:
+-    //CONFIG_SetGameControllerDefaultsStandard();
++    for (int i=0; i<MAXJOYBUTTONSANDHATS; i++)
++        CONFIG_SetJoystickButtonFunction(i, 0, CONFIG_FunctionNameToNum(joystickdefaults[i]));
++
++    for (int i=0; i<MAXJOYAXES; i++)
++    {
++        CONFIG_SetJoystickAnalogAxisScale(i, DEFAULTJOYSTICKANALOGUESCALE);
++        CONFIG_SetJoystickAnalogAxisDeadSaturate(i, DEFAULTJOYSTICKANALOGUEDEAD, DEFAULTJOYSTICKANALOGUESATURATE);
++        CONFIG_SetJoystickAnalogAxisFunction(i, CONFIG_AnalogNameToNum(joystickanalogdefaults[i]));
++        CONFIG_SetJoystickDigitalAxisFunction(i, 0, CONFIG_FunctionNameToNum(joystickdigitaldefaults[i*2]));
++        CONFIG_SetJoystickDigitalAxisFunction(i, 1, CONFIG_FunctionNameToNum(joystickdigitaldefaults[i*2+1]));
++    }
+ 
+ #if 0
+     FXVolume       = 128;
+diff --git a/source/exhumed/src/exhumed.cpp b/source/exhumed/src/exhumed.cpp
+index b8c4602..9c9c566 100644
+--- a/source/exhumed/src/exhumed.cpp
++++ b/source/exhumed/src/exhumed.cpp
+@@ -28,6 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ #include "common.h"
+ #include "keyboard.h"
+ #include "control.h"
++#include "joystick.h"
+ #include "engine.h"
+ #include "exhumed.h"
+ #include "osdcmds.h"
+@@ -839,9 +840,46 @@ void timerhandler()
+     }
+ }
+ 
++// Menus, intermissions and the demo read the keyboard only. Buttons pressed
++// during play stay out of it, so the one that opens the menu does not also
++// act on it.
++static void HandlePadKeys()
++{
++    static const struct { int button, scan; char ascii; } padKeys[] =
++    {
++        { CONTROLLER_BUTTON_DPAD_UP,    sc_UpArrow,    0 },
++        { CONTROLLER_BUTTON_DPAD_DOWN,  sc_DownArrow,  0 },
++        { CONTROLLER_BUTTON_DPAD_LEFT,  sc_LeftArrow,  0 },
++        { CONTROLLER_BUTTON_DPAD_RIGHT, sc_RightArrow, 0 },
++        { CONTROLLER_BUTTON_A,          sc_Return,     asc_Enter },
++        { CONTROLLER_BUTTON_START,      sc_Return,     asc_Enter },
++        { CONTROLLER_BUTTON_B,          sc_Escape,     asc_Escape },
++    };
++    static int32_t buttonsOld;
++
++    int32_t const buttons = JOYSTICK_GetControllerButtons();
++    bool const inPlay = CONTROL_BindsEnabled && !bInDemo;
++
++    for (auto const &key : padKeys)
++    {
++        int32_t const bit = 1 << key.button;
++
++        if (!((buttons ^ buttonsOld) & bit))
++            continue;
++
++        bool const down = (buttons & bit) && !inPlay;
++        KB_KeyDown[key.scan] = down;
++        if (down && key.ascii && !keyBufferFull())
++            keyBufferInsert(key.ascii);
++    }
++
++    buttonsOld = buttons;
++}
++
+ void HandleAsync()
+ {
+     handleevents();
++    HandlePadKeys();
+ }
+ 
+ int MyGetStringWidth(const char *str)
+diff --git a/source/exhumed/src/menu.cpp b/source/exhumed/src/menu.cpp
+index ea82398..999145b 100644
+--- a/source/exhumed/src/menu.cpp
++++ b/source/exhumed/src/menu.cpp
+@@ -1224,8 +1224,9 @@ check_keys:
+                 PlayLocalSound(StaticSound[kSoundSwitchFoot], 0);
+                 KB_KeyDown[sc_Return] = 0;
+ 
++                // a pad cannot type: an empty name no longer cancels
+                 if (nameList[nSlot][0] == 0) {
+-                    return -1;
++                    Bsprintf(nameList[nSlot], "SLOT %d", nSlot + 1);
+                 }
+ 
+                 if (nNameLength) // does the save slot already exist?

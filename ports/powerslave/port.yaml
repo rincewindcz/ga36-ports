@@ -1,0 +1,54 @@
+title: Powerslave
+catalog: 15
+summary: Lobotomy Software's 1996 Egyptian shooter on PCExhumed, also known as Exhumed.
+tags: [shooter, fps]
+status: wip
+review: draft
+accent: amber
+added: 2026-10-31
+icon: icon.png
+
+engine:
+  name: PCExhumed
+  url: https://github.com/nukeykt/NBlood
+  commit: 497385d64b97f4fd13b6efb3929df0f2ab3adc87
+  license: GPL-2.0 and BUILD license
+
+data:
+  kind: user
+  sources:
+    - name: Steam, PowerSlave (DOS Classic Edition)
+      url: https://store.steampowered.com/app/1260020/PowerSlave_DOS_Classic_Edition/
+    - name: Original CD (1996)
+      note: The PC version of Powerslave or Exhumed. The console-based PowerSlave Exhumed remaster is a different game.
+  files:
+    - { from: "STUFF.DAT, DEMO.VCR, BOOK.MOV", to: ports/powerslave/data/ }
+    - { from: "exhumed02.ogg to exhumed19.ogg (optional CD tracks)", to: ports/powerslave/data/ }
+
+controls:
+  - { button: L-stick, action: "Move" }
+  - { button: R-stick, action: "Look" }
+  - { button: R2, action: "Fire" }
+  - { button: L2, action: "Run" }
+  - { button: R1, action: "Next weapon" }
+  - { button: L1, action: "Previous weapon" }
+  - { button: A, action: "Jump, menu confirm" }
+  - { button: B, action: "Crouch, menu back" }
+  - { button: X, action: "Open" }
+  - { button: Y, action: "Centre view" }
+  - { button: dpad, action: "Up autorun, down use item, left and right pick item; menu navigation" }
+  - { button: START, action: "Menu, menu confirm" }
+  - { button: SELECT, action: "Map" }
+
+licenses:
+  - ports/powerslave/LICENSE.txt
+  - ports/powerslave/LICENSE-build.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-31
+    changes:
+      - First release.
+    file: powerslave-2026.10.1.zip
+    size: 1436825
+    sha256: 8a042a140750c700312ca73beedd79b0f25fe5c232ac3c1655b23150e8578b7a

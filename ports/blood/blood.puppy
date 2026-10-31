@@ -1,0 +1,14 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Blood
+DESCRIPTION=Monolith's 1997 horror shooter (NBlood)
+ICON=/home/player/.local/share/icons/blood.png
+COMMAND=/home/player/ports/blood/run.sh
+COLOR=#dc2847
+[ENTRY]
+CATEGORY=Ports
+NAME=Blood: Cryptic Passage
+DESCRIPTION=The 1998 expansion (NBlood)
+ICON=/home/player/.local/share/icons/blood.png
+COMMAND=/home/player/ports/blood/run.sh cryptic
+COLOR=#dc2847

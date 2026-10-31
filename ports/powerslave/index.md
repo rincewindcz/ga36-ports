@@ -1,0 +1,3 @@
+- New Game: pick a slot with A, then press A again; an empty slot is named SLOT 1 to SLOT 5.
+- Music and the Ramses narration come from the CD tracks; without them the game has no music.
+- Saves and the config are in `ports/powerslave`.

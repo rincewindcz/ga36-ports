@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Powerslave
+DESCRIPTION=Lobotomy's 1996 Egyptian shooter (PCExhumed)
+ICON=/home/player/.local/share/icons/powerslave.png
+COMMAND=/home/player/ports/powerslave/run.sh
+COLOR=#ffb020

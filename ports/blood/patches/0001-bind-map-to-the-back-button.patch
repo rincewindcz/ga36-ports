@@ -1,0 +1,13 @@
+diff --git a/source/blood/src/_functio.h b/source/blood/src/_functio.h
+index 3775972..bb73458 100644
+--- a/source/blood/src/_functio.h
++++ b/source/blood/src/_functio.h
+@@ -313,7 +313,7 @@ static const char * joystickdefaults[MAXJOYBUTTONSANDHATS] =
+    "Crouch_Toggle",
+    "Open",
+    "Last_Weapon",
+-   "",
++   "Map_Toggle",
+    "",
+    "",
+    "",

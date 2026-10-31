@@ -1,0 +1,16 @@
+diff --git a/GNUmakefile b/GNUmakefile
+index 39c632a..b878e97 100644
+--- a/GNUmakefile
++++ b/GNUmakefile
+@@ -666,7 +666,10 @@ duke3d_game_orderonlydeps :=
+ duke3d_editor_orderonlydeps :=
+ 
+ ifeq ($(SUBPLATFORM),LINUX)
+-    LIBS += -lFLAC -lasound
++    LIBS += -lasound
++    ifneq (0,$(HAVE_FLAC))
++        LIBS += -lFLAC
++    endif
+ endif
+ 
+ ifeq ($(PLATFORM),BSD)
