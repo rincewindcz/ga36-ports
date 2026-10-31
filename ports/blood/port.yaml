@@ -57,6 +57,9 @@ releases:
     date: 2026-10-31
     changes:
       - Use the original game icon.
+    file: blood-2026.10.2.zip
+    size: 1693316
+    sha256: d2574000616ab7c49005042f84adccc0201ef3909b9adb97d3f88a1b58cd9805
   - version: 2026.10.1
     date: 2026-10-31
     changes:
