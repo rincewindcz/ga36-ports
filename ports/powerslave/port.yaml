@@ -2,7 +2,7 @@ title: Powerslave
 catalog: 15
 summary: Lobotomy Software's 1996 Egyptian shooter on PCExhumed, also known as Exhumed.
 tags: [shooter, fps]
-status: wip
+status: playable
 review: draft
 accent: amber
 added: 2026-10-31
@@ -22,8 +22,8 @@ data:
     - name: Original CD (1996)
       note: The PC version of Powerslave or Exhumed. The console-based PowerSlave Exhumed remaster is a different game.
   files:
-    - { from: "STUFF.DAT, DEMO.VCR, BOOK.MOV", to: ports/powerslave/data/ }
-    - { from: "exhumed02.ogg to exhumed19.ogg (optional CD tracks)", to: ports/powerslave/data/ }
+    - { from: "STUFF.DAT, DEMO.VCR", to: ports/powerslave/data/ }
+    - { from: "BOOK.MOV, exhumed02.ogg to exhumed19.ogg (optional)", to: ports/powerslave/data/ }
 
 controls:
   - { button: L-stick, action: "Move" }
@@ -39,6 +39,10 @@ controls:
   - { button: dpad, action: "Up autorun, down use item, left and right pick item; menu navigation" }
   - { button: START, action: "Menu, menu confirm" }
   - { button: SELECT, action: "Map" }
+
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
 
 licenses:
   - ports/powerslave/LICENSE.txt

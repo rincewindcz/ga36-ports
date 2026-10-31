@@ -2,7 +2,7 @@ title: Blood
 catalog: 14
 summary: Monolith's 1997 horror shooter on NBlood, with Cryptic Passage.
 tags: [shooter, fps]
-status: wip
+status: playable
 review: draft
 accent: crimson
 added: 2026-10-31
@@ -25,7 +25,7 @@ data:
   files:
     - { from: "BLOOD.INI, BLOOD.RFF, GUI.RFF, SOUNDS.RFF", to: ports/blood/data/ }
     - { from: "SURFACE.DAT, VOXEL.DAT, TILES000.ART to TILES017.ART", to: ports/blood/data/ }
-    - { from: "BLOOD000.DEM to BLOOD003.DEM (optional)", to: ports/blood/data/ }
+    - { from: "BLOOD000.DEM to BLOOD003.DEM, GTI.SMK, LOGO.SMK (optional)", to: ports/blood/data/ }
     - { from: "CP*.MAP, CPART07.AR_, CPART15.AR_, CRYPTIC.INI, CRYPTIC.SMK, CRYPTIC.WAV (Cryptic Passage)", to: ports/blood/data/ }
 
 controls:
@@ -42,6 +42,11 @@ controls:
   - { button: dpad, action: "Up last weapon, down use item, left and right pick item; menu navigation" }
   - { button: START, action: "Menu" }
   - { button: SELECT, action: "Map" }
+
+shots:
+  - { file: shots/title.png }
+  - { file: shots/play.png }
+  - { file: shots/cryptic.png, caption: "Cryptic Passage" }
 
 licenses:
   - ports/blood/LICENSE.txt
