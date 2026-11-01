@@ -1,0 +1,3 @@
+- Two games, two entries: Rick Dangerous and Rick Dangerous II.
+- Hold a direction and press fire to use the stick, dynamite or a bullet.
+- Press fire to leave the story screen before each level.

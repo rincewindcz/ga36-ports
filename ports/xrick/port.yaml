@@ -1,0 +1,43 @@
+title: Rick Dangerous
+catalog: 13
+summary: Rick Dangerous and Rick Dangerous II, the xrick reimplementation.
+tags: [platform, 2d, retro]
+status: playable
+review: draft
+accent: crimson
+added: 2026-10-30
+icon: icon.png
+
+engine:
+  name: xrick
+  url: https://github.com/zpqrtbnk/xrick
+  commit: b39351355ac7b6d3de7879460ef5c22242fb53dd
+  license: MIT
+
+data:
+  kind: included
+  license: Rights unclear, compiled into the engine by its repository
+  credit: Core Design
+  license_file: ports/xrick/README.md
+
+controls:
+  - { button: dpad, action: "Move, jump, crawl" }
+  - { button: L-stick, action: "Move, jump, crawl" }
+  - { button: A, action: "Fire, with a direction: stick, dynamite, bullet" }
+  - { button: B, action: "Fire, with a direction: stick, dynamite, bullet" }
+  - { button: START, action: "Pause" }
+  - { button: SELECT, action: "End the game" }
+
+shots:
+  - { file: shots/title.png, caption: "Title screen" }
+  - { file: shots/play.png, caption: "Rick Dangerous, the first boulder" }
+  - { file: shots/rick2.png, caption: "Rick Dangerous II" }
+
+licenses:
+  - ports/xrick/README.md
+  - ports/xrick/LICENSE-AtariAudio.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-30
+    changes: [First release.]

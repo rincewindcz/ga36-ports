@@ -1,0 +1,14 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Rick Dangerous
+DESCRIPTION=Platform adventure from 1989 (xrick)
+ICON=/home/player/.local/share/icons/xrick.png
+COMMAND=/home/player/ports/xrick/run.sh
+COLOR=#dc2847
+[ENTRY]
+CATEGORY=Ports
+NAME=Rick Dangerous II
+DESCRIPTION=The 1990 sequel (xrick)
+ICON=/home/player/.local/share/icons/xrick.png
+COMMAND=/home/player/ports/xrick/run.sh -game 2
+COLOR=#dc2847

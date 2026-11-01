@@ -1,0 +1,254 @@
+diff --git a/xrick/include/config.h b/xrick/include/config.h
+index 705a8bd..5c35994 100644
+--- a/xrick/include/config.h
++++ b/xrick/include/config.h
+@@ -49,7 +49,7 @@
+ #define ENABLE_LOG
+ 
+ /* joystick support */
+-#undef ENABLE_JOYSTICK
++#define ENABLE_JOYSTICK
+ 
+ /* sound support */
+ #define ENABLE_SOUND
+@@ -67,7 +67,7 @@
+ /* GL shader chain between the game frame and the screen (src/sysvid_gl.c, the passes
+    are listed there). #undef it for the plain SDL_Renderer path; that path is also taken
+    at run time when the GL context or a shader cannot be set up */
+-#define ENABLE_SHADERS
++#undef ENABLE_SHADERS
+ 
+ /* development tools */
+ #undef ENABLE_DEVTOOLS
+diff --git a/xrick/src/sysevt.c b/xrick/src/sysevt.c
+index 76973a8..42b37c7 100644
+--- a/xrick/src/sysevt.c
++++ b/xrick/src/sysevt.c
+@@ -28,7 +28,7 @@
+ #include "rd2_snd.h"
+ #include "rd2_sys.h"
+ 
+-#define SYSJOY_RANGE 3280
++#define SYSJOY_RANGE 16000
+ 
+ #define SETBIT(x,b) x |= (b)
+ #define CLRBIT(x,b) x &= ~(b)
+@@ -39,6 +39,54 @@ static SDL_Event event;
+ void (*sysevt_rawkey)(U16 scancode, U8 down, U8 repeat) = NULL;
+ U8 sysevt_quit = 0;
+ 
++#ifdef ENABLE_JOYSTICK
++static void processEvent();
++
++static S8 stickx = 0, sticky = 0;
++
++/*
++ * Pad input goes through the key path, so that rd2's raw key hook sees it too
++ */
++static void
++padKey(U16 key, U8 down)
++{
++	event.type = down ? SDL_EVENT_KEY_DOWN : SDL_EVENT_KEY_UP;
++	event.key.scancode = (SDL_Scancode)key;
++	event.key.repeat = false;
++	processEvent();
++}
++
++static void
++stickKey(U16 neg, U16 pos, Sint16 value, S8 *state)
++{
++	S8 now = value < -SYSJOY_RANGE ? -1 : value > SYSJOY_RANGE ? 1 : 0;
++
++	if (now == *state)
++		return;
++	if (*state)
++		padKey(*state < 0 ? neg : pos, 0);
++	*state = now;
++	if (now)
++		padKey(now < 0 ? neg : pos, 1);
++}
++
++static U16
++buttonKey(U8 button)
++{
++	switch (button) {
++	case SDL_GAMEPAD_BUTTON_DPAD_UP: return SDL_SCANCODE_UP;
++	case SDL_GAMEPAD_BUTTON_DPAD_DOWN: return SDL_SCANCODE_DOWN;
++	case SDL_GAMEPAD_BUTTON_DPAD_LEFT: return SDL_SCANCODE_LEFT;
++	case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: return SDL_SCANCODE_RIGHT;
++	case SDL_GAMEPAD_BUTTON_SOUTH:
++	case SDL_GAMEPAD_BUTTON_EAST: return syskbd_fire;
++	case SDL_GAMEPAD_BUTTON_START: return syskbd_pause;
++	case SDL_GAMEPAD_BUTTON_BACK: return syskbd_end;
++	default: return 0;
++	}
++}
++#endif
++
+ /*
+  * Process an event
+  */
+@@ -177,42 +225,17 @@ processEvent()
+   break;
+ #endif
+ #ifdef ENABLE_JOYSTICK
+-  case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+-    IFDEBUG_EVENTS(sys_printf("xrick/events: joystick\n"););
+-    if (event.jaxis.axis == 0) {  /* left-right */
+-      if (event.jaxis.value < -SYSJOY_RANGE) {  /* left */
+-	SETBIT(control_status, CONTROL_LEFT);
+-	CLRBIT(control_status, CONTROL_RIGHT);
+-      }
+-      else if (event.jaxis.value > SYSJOY_RANGE) {  /* right */
+-	SETBIT(control_status, CONTROL_RIGHT);
+-	CLRBIT(control_status, CONTROL_LEFT);
+-      }
+-      else {  /* center */
+-	CLRBIT(control_status, CONTROL_RIGHT);
+-	CLRBIT(control_status, CONTROL_LEFT);
+-      }
+-    }
+-    if (event.jaxis.axis == 1) {  /* up-down */
+-      if (event.jaxis.value < -SYSJOY_RANGE) {  /* up */
+-	SETBIT(control_status, CONTROL_UP);
+-	CLRBIT(control_status, CONTROL_DOWN);
+-      }
+-      else if (event.jaxis.value > SYSJOY_RANGE) {  /* down */
+-	SETBIT(control_status, CONTROL_DOWN);
+-	CLRBIT(control_status, CONTROL_UP);
+-      }
+-      else {  /* center */
+-	CLRBIT(control_status, CONTROL_DOWN);
+-	CLRBIT(control_status, CONTROL_UP);
+-      }
+-    }
+-    break;
+-  case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+-    SETBIT(control_status, CONTROL_FIRE);
++  case SDL_EVENT_GAMEPAD_AXIS_MOTION:
++    if (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX)
++      stickKey(SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, event.gaxis.value, &stickx);
++    else if (event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY)
++      stickKey(SDL_SCANCODE_UP, SDL_SCANCODE_DOWN, event.gaxis.value, &sticky);
+     break;
+-  case SDL_EVENT_JOYSTICK_BUTTON_UP:
+-    CLRBIT(control_status, CONTROL_FIRE);
++  case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
++  case SDL_EVENT_GAMEPAD_BUTTON_UP:
++    key = buttonKey(event.gbutton.button);
++    if (key)
++      padKey(key, event.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN);
+     break;
+ #endif
+   default:
+diff --git a/xrick/src/sysjoy.c b/xrick/src/sysjoy.c
+index 59b14e3..6f40ec1 100644
+--- a/xrick/src/sysjoy.c
++++ b/xrick/src/sysjoy.c
+@@ -18,47 +18,29 @@
+ #include "system.h"
+ #include "debug.h"
+ 
+-static SDL_Joystick *j = NULL;
+-
+ void
+ sysjoy_init(void)
+ {
+-  int i, jcount;
+-  SDL_JoystickID *jids;
++  int i, count;
++  SDL_JoystickID *ids;
+ 
+-  if (!SDL_InitSubSystem(SDL_INIT_JOYSTICK)) {
++  if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
+     IFDEBUG_JOYSTICK(
+-      sys_printf("xrick/joystick: can not initialize joystick subsystem\n");
++      sys_printf("xrick/joystick: can not initialize gamepad subsystem\n");
+       );
+     return;
+   }
+ 
+-  /* SDL3 replaced SDL_NumJoysticks()/SDL_JoystickOpen(index) with an explicit
+-     instance-id array from SDL_GetJoysticks(). */
+-  jids = SDL_GetJoysticks(&jcount);
+-  if (!jids || !jcount) {  /* no joystick on this system */
+-    IFDEBUG_JOYSTICK(sys_printf("xrick/joystick: no joystick available\n"););
+-    SDL_free(jids);
+-    return;
+-  }
+-
+-  /* use the first joystick that we can open */
+-  for (i = 0; i < jcount; i++) {
+-    j = SDL_OpenJoystick(jids[i]);
+-    if (j)
+-      break;
+-  }
+-  SDL_free(jids);
+-
+-  /* enable events -- SDL3 takes a plain bool, no separate SDL_ENABLE constant */
+-  SDL_SetJoystickEventsEnabled(true);
++  /* SDL_Quit closes them */
++  ids = SDL_GetGamepads(&count);
++  for (i = 0; ids && i < count; i++)
++    SDL_OpenGamepad(ids[i]);
++  SDL_free(ids);
+ }
+ 
+ void
+ sysjoy_shutdown(void)
+ {
+-  if (j)
+-    SDL_CloseJoystick(j);
+ }
+ 
+ #endif /* ENABLE_JOYSTICK */
+diff --git a/xrick/src/sysvid.c b/xrick/src/sysvid.c
+index 7807712..c20b4ca 100644
+--- a/xrick/src/sysvid.c
++++ b/xrick/src/sysvid.c
+@@ -291,7 +291,7 @@ IFDEBUG_VIDEO(
+ 
+ 	// scaling quality: SDL3 dropped SDL_HINT_RENDER_SCALE_QUALITY in favor of a
+ 	// per-texture scale mode (SDL_SCALEMODE_LINEAR is also the SDL3 default).
+-	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_LINEAR);
++	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+ 
+ 	// This is an opaque raster framebuffer. pald[].a used to be left at 0; SDL2
+ 	// apparently defaulted new textures to a blend mode that ignores it; SDL3
+diff --git a/xrick/src/xrick.c b/xrick/src/xrick.c
+index c266a3a..e209bfd 100644
+--- a/xrick/src/xrick.c
++++ b/xrick/src/xrick.c
+@@ -14,6 +14,7 @@
+ #include "system.h"
+ #include "sysarg.h"
+ #include "sysvid.h"
++#include "sysjoy.h"
+ #include "game.h"
+ #include "fb.h"
+ #include "rd2_game.h"
+@@ -34,6 +35,13 @@
+ /*
+  * Sets a console, if possible
+  */
++/* the launcher ends a game with SIGTERM: that is a normal exit, status 0 */
++static void quit(int sig)
++{
++	(void)sig;
++	exit(0);
++}
++
+ /* review-plan.md R0.1: implicit int return is a hard error in modern C. Windows-only
+    body; build portability only. */
+ static void setConsole(void)
+@@ -100,8 +108,8 @@ sys_init(int argc, char** argv)
+ #endif
+ 
+ 	atexit(sys_shutdown);
+-	signal(SIGINT, exit);
+-	signal(SIGTERM, exit);
++	signal(SIGINT, quit);
++	signal(SIGTERM, quit);
+ }
+ 
+ 
