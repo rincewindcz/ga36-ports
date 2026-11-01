@@ -26,7 +26,8 @@ REPO_URL = "https://github.com/rincewindcz/ga36-ports"
 
 STATUS = {"works", "playable", "wip"}
 REVIEW = {"draft", "approved", "rejected"}
-ACCENT = {"blue", "teal", "amber", "rose", "violet", "green", "crimson"}
+ACCENT = {"blue": "#4f8cff", "teal": "#2ec4b6", "amber": "#ffb020", "rose": "#ff5c8a", "violet": "#9b7bff",
+          "green": "#5bd16e", "crimson": "#dc2847"}
 KINDS = {"included", "user"}
 VFAT_BAD = re.compile(r'[<>:"\\|?*\x00-\x1f]')
 
@@ -63,7 +64,8 @@ def validate(port_id, meta, problems):
 def puppy_paths(path):
     """COMMAND and ICON of a Puppy entry, relative to HOME."""
     fields = dict(line.split("=", 1) for line in path.read_text().splitlines() if "=" in line)
-    return {key: fields[key].removeprefix("/home/player/") for key in ("COMMAND", "ICON") if key in fields}
+    return {key: fields[key].split()[0].removeprefix("/home/player/")
+            for key in ("COMMAND", "ICON", "DEFAULT_ICON") if key in fields}
 
 
 def inspect(port_id, meta, stage, problems):
@@ -81,6 +83,9 @@ def inspect(port_id, meta, stage, problems):
 
     puppy = stage / allowed[1]
     if puppy.is_file():
+        color = ACCENT.get(meta.get("accent"))
+        problems.check(f"COLOR={color}" in puppy.read_text().splitlines(),
+                       f"{port_id}.puppy: COLOR must be {color}, the accent of port.yaml")
         for key, rel in puppy_paths(puppy).items():
             target = stage / rel
             problems.check(target.is_file(), f"{port_id}.puppy: {key} {rel} not in the zip")

@@ -4,3 +4,4 @@ NAME=Gates of Skeldal
 DESCRIPTION=Brány Skeldalu (Napoleon Games)
 ICON=/home/player/.local/share/icons/skeldal.png
 COMMAND=/home/player/ports/skeldal/run.sh
+COLOR=#4f8cff

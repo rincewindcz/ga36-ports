@@ -4,3 +4,4 @@ NAME=Gravity Defied
 DESCRIPTION=Motorcycle trial racing from the J2ME era
 ICON=/home/player/.local/share/icons/gravitydefied.png
 COMMAND=/home/player/ports/gravitydefied/run.sh
+COLOR=#5bd16e

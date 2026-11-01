@@ -31,7 +31,7 @@ ship the engine and say where to get the data legally.
 ## Build and package
 
 Requirements: bash, clang, lld, llvm-strip, cmake, curl, gpgv with the Debian archive keyring, xz,
-zip, Python 3 with PyYAML. Some ports need more (ImageMagick, 7-Zip).
+zip, Python 3 with PyYAML. Some ports need more (ImageMagick, 7-Zip, a JDK).
 
 ```sh
 ports/lugaru/build.sh
@@ -45,7 +45,9 @@ Build output goes to `build/<id>/build.log`.
 
 - files outside `ports/<id>/`, `.local/share/applications/<id>.puppy` and `.local/share/icons/<id>.png`;
 - symlinks, names invalid on vfat, or names that differ only in case;
-- a Puppy entry whose `COMMAND` or `ICON` is missing, or a `COMMAND` that is not executable;
+- a Puppy entry without the `COLOR` of the port's `accent` (the card colour in kennel);
+- a Puppy entry whose `COMMAND`, `ICON` or `DEFAULT_ICON` is missing, or a `COMMAND` that is not executable
+  (its first word, for an `[ARCHIVE]` entry that ends in `%s`);
 - a missing file from `licenses` or `data.license_file`;
 - any file under a `data.files[].to` path when `data.kind` is `user`.
 
