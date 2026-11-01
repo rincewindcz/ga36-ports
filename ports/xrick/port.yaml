@@ -41,3 +41,6 @@ releases:
   - version: 2026.10.1
     date: 2026-10-30
     changes: [First release.]
+    file: xrick-2026.10.1.zip
+    size: 661758
+    sha256: c79cee4be83d3d252a844de1f5f89673a3cbab6dcdcad303ce881edd884a015b
