@@ -55,6 +55,9 @@ releases:
       - Make the left stick reach run speed.
       - Make the right stick much faster, with a smooth curve for aiming.
       - Link the right commit in SOURCE.txt.
+    file: powerslave-2026.11.1.zip
+    size: 1436807
+    sha256: 6a3398437c2225780a5c5aca79767f23fe4d0ba10b1655f918aba8f64d5d692b
   - version: 2026.10.1
     date: 2026-10-31
     changes:

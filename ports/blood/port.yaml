@@ -58,6 +58,9 @@ releases:
     changes:
       - Turn on autorun by default.
       - Make the right stick much faster, with a smooth curve for aiming.
+    file: blood-2026.11.1.zip
+    size: 1707632
+    sha256: 8397c6c18fee5e807517b045e0351fdf970555bb94225a12f4aed94d9b490e7c
   - version: 2026.10.3
     date: 2026-10-31
     changes:
