@@ -1,0 +1,7 @@
+#!/bin/sh
+# The core runs "java": the bundled JRE with its libraries, font and sound setup.
+root=$(dirname "$(dirname "$(readlink -f "$0")")")
+export LD_LIBRARY_PATH="$root/lib"
+export FONTCONFIG_FILE="$root/fonts.conf"
+export ALSA_CONFIG_PATH="$root/asound.conf"
+exec "$root/jre/bin/java" -XX:+UseSerialGC -Djava.awt.headless=true "$@"

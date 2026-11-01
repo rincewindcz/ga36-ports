@@ -1,0 +1,71 @@
+--- a/src/org/recompile/freej2me/Libretro.java
++++ b/src/org/recompile/freej2me/Libretro.java
+@@ -20,10 +20,15 @@
+ import org.recompile.mobile.MobilePlatform;
+ 
+ import java.io.File;
++import java.io.OutputStream;
++import java.io.PrintStream;
+ import java.net.URLDecoder;
+ 
+ public class Libretro
+ {
++	// Frames travel on stdout, and a game's println between a header and its pixels would shift them
++	private static final PrintStream framePipe = System.out;
++
+ 	private int lcdWidth, lcdHeight, lastPressedKey = -1;
+ 	volatile int[] lcdData;
+ 
+@@ -51,6 +56,7 @@
+ 
+ 	public static void main(String args[])
+ 	{
++		System.setOut(new PrintStream(new OutputStream() { public void write(int b) { } }));
+ 		Mobile.clearOldLog();
+ 		Libretro app = new Libretro(args);
+ 	}
+@@ -91,8 +97,8 @@
+ 
+ 		lio.start();
+ 
+-		System.out.println("+READY");
+-		System.out.flush();
++		framePipe.println("+READY");
++		framePipe.flush();
+ 	}
+ 
+ 	private class LibretroIO implements Runnable
+@@ -184,10 +190,10 @@
+ 										frameHeader[14] = Mobile.libretroRestartRequested;
+ 										frameHeader[15] = Mobile.libretroEncodingRequested;
+ 
+-										System.out.write(frameHeader, 0, 16);
++										framePipe.write(frameHeader, 0, 16);
+ 
+-										System.out.write(frameBuffer, 0, lcdData.length*3);
+-										System.out.flush();
++										framePipe.write(frameBuffer, 0, lcdData.length*3);
++										framePipe.flush();
+ 										Thread.sleep(Integer.MAX_VALUE); // Wait for as long as possible until the libretro core kills this
+ 									}
+ 								}
+@@ -378,7 +384,7 @@
+ 									frameHeader[14] = Mobile.libretroRestartRequested;
+ 									frameHeader[15] = Mobile.libretroEncodingRequested;
+ 
+-									System.out.write(frameHeader, 0, 16);
++									framePipe.write(frameHeader, 0, 16);
+ 
+ 									/* Vibration duration should be set to zero to prevent constant sends of the same data, so update it here */
+ 									Mobile.vibrationDuration = 0;
+@@ -393,8 +399,8 @@
+ 											frameBuffer[3*i+2] = (byte)((lcdData[i])&0xFF);
+ 										}
+ 
+-										System.out.write(frameBuffer, 0, lcdData.length*3);
+-										System.out.flush();
++										framePipe.write(frameBuffer, 0, lcdData.length*3);
++										framePipe.flush();
+ 									}
+ 								}
+ 								catch (Exception e)

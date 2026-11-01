@@ -1,0 +1,8 @@
+[ARCHIVE]
+NAME=J2ME
+DESCRIPTION=Java phone games (FreeJ2ME-Plus)
+ENTRY_DIRECTORIES=/home/player/ports/freej2me/games;/home/player/roms/j2me;/media/external/roms/j2me
+ENTRY_EXTENSIONS=jar;jad;kjx
+DEFAULT_ICON=/home/player/.local/share/icons/freej2me.png
+COMMAND=/home/player/ports/freej2me/run.sh %s
+COLOR=#ffb020

@@ -1,0 +1,3 @@
+- Portrait games fill the middle of the screen.
+- Mode opens the RetroArch menu, with screen size and rotation under Core Options.
+- Select and Start together quit the game.

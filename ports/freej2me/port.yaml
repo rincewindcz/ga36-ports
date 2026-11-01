@@ -1,0 +1,46 @@
+title: J2ME
+catalog: 12
+summary: Java phone games on FreeJ2ME-Plus.
+tags: [emulator, java]
+status: wip
+review: draft
+accent: amber
+added: 2026-10-30
+icon: icon.png
+
+engine:
+  name: FreeJ2ME-Plus
+  url: https://github.com/TASEmulators/freej2me-plus
+  commit: 3933e75ef927a95eab9f5e065f0b76dabf336069
+  license: GPL-3.0
+
+data:
+  kind: user
+  sources:
+    - { name: Your own games, url: https://github.com/TASEmulators/freej2me-plus, note: "JAR, JAD or KJX files." }
+  files:
+    - { from: "*.jar", to: ports/freej2me/games/ }
+
+controls:
+  - { button: dpad, action: "Up, down, left, right" }
+  - { button: L-stick, action: "Keys 2, 4, 6, 8" }
+  - { button: A, action: "Key 9" }
+  - { button: B, action: "Key 7" }
+  - { button: X, action: "Key 0" }
+  - { button: Y, action: "Fire" }
+  - { button: L1, action: "Key 1" }
+  - { button: R1, action: "Key 3" }
+  - { button: L2, action: "Key *" }
+  - { button: R2, action: "Key #" }
+  - { button: START, action: "Right soft key" }
+  - { button: SELECT, action: "Left soft key" }
+
+licenses:
+  - ports/freej2me/LICENSE.txt
+  - ports/freej2me/lib/licenses/SOURCES.txt
+
+releases:
+  - version: 2026.10.1
+    date: 2026-10-30
+    changes:
+      - First release.
