@@ -1,0 +1,64 @@
+diff --git a/source/blood/src/_functio.h b/source/blood/src/_functio.h
+index bb73458..0000000 100644
+--- a/source/blood/src/_functio.h
++++ b/source/blood/src/_functio.h
+@@ -363,8 +363,8 @@ static const int32_t joystickanalogsaturatedefaults[MAXJOYAXES] =
+    {
+    DEFAULTJOYSTICKANALOGUESATURATE*3,
+    DEFAULTJOYSTICKANALOGUESATURATE*3,
+-   DEFAULTJOYSTICKANALOGUESATURATE*2,
+-   DEFAULTJOYSTICKANALOGUESATURATE*2,
++   7000,
++   7000,
+    };
+ 
+ 
+diff --git a/source/blood/src/config.cpp b/source/blood/src/config.cpp
+index a3df474..6208feb 100644
+--- a/source/blood/src/config.cpp
++++ b/source/blood/src/config.cpp
+@@ -386,7 +386,7 @@ void CONFIG_SetDefaults(void)
+     gTurnAcceleration = 1;
+     gCenterViewOnDrop = 0;
+     gDetail = 4;
+-    gAutoRun = 0;
++    gAutoRun = 1;
+     gViewInterpolate = 1;
+     gViewHBobbing = 1;
+     gViewVBobbing = 1;
+diff --git a/source/blood/src/controls.cpp b/source/blood/src/controls.cpp
+index ec38449..7589d1f 100644
+--- a/source/blood/src/controls.cpp
++++ b/source/blood/src/controls.cpp
+@@ -522,11 +522,11 @@ void ctrlGetInput(void)
+         if (info.mousey == 0)
+         {
+             if (gMouseAim)
+-                input.q16mlook = fix16_sadd(input.q16mlook, fix16_sdiv(fix16_from_float(scaleAdjustmentToInterval(gMouseAimingFlipped ? info.dpitch : -info.dpitch)/16.f), F16(128)));
++                input.q16mlook = fix16_sadd(input.q16mlook, fix16_sdiv(fix16_from_float(scaleAdjustmentToInterval(gMouseAimingFlipped ? info.dpitch : -info.dpitch)/12.f), F16(128)));
+             else
+                 input.forward -= int(scaleAdjustmentToInterval(info.dpitch)/2.f);
+         }
+-        input.q16turn = fix16_sadd(input.q16turn, fix16_sdiv(fix16_from_float(scaleAdjustmentToInterval(info.dyaw)/16.f), F16(32)));
++        input.q16turn = fix16_sadd(input.q16turn, fix16_sdiv(fix16_from_float(scaleAdjustmentToInterval(info.dyaw)*5.f/16.f), F16(32)));
+         if (gCenterViewOnDrop == 2)
+         {
+             gInput.keyFlags.lookCenter = 1;
+diff --git a/source/blood/src/gamedefs.h b/source/blood/src/gamedefs.h
+index 092f2fc..3cc71ff 100644
+--- a/source/blood/src/gamedefs.h
++++ b/source/blood/src/gamedefs.h
+@@ -57,11 +57,11 @@ extern "C" {
+ #if defined(GEKKO)
+ #define DEFAULTJOYSTICKANALOGUESCALE        16384
+ #define DEFAULTJOYSTICKANALOGUEDEAD         1000
+-#define DEFAULTJOYSTICKANALOGUESATURATE     9500
++#define DEFAULTJOYSTICKANALOGUESATURATE     8000
+ #else
+ #define DEFAULTJOYSTICKANALOGUESCALE        65536
+ #define DEFAULTJOYSTICKANALOGUEDEAD         1000
+-#define DEFAULTJOYSTICKANALOGUESATURATE     9500
++#define DEFAULTJOYSTICKANALOGUESATURATE     8000
+ #endif
+ 
+ #ifdef __cplusplus

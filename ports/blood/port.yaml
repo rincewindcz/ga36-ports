@@ -53,6 +53,11 @@ licenses:
   - ports/blood/LICENSE-build.txt
 
 releases:
+  - version: 2026.11.1
+    date: 2026-11-01
+    changes:
+      - Turn on autorun by default.
+      - Make the right stick much faster, with a smooth curve for aiming.
   - version: 2026.10.3
     date: 2026-10-31
     changes:

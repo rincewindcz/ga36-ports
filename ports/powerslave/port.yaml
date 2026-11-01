@@ -49,6 +49,12 @@ licenses:
   - ports/powerslave/LICENSE-build.txt
 
 releases:
+  - version: 2026.11.1
+    date: 2026-11-01
+    changes:
+      - Make the left stick reach run speed.
+      - Make the right stick much faster, with a smooth curve for aiming.
+      - Link the right commit in SOURCE.txt.
   - version: 2026.10.1
     date: 2026-10-31
     changes:

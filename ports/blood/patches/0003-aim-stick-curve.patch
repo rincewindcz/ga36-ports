@@ -1,0 +1,20 @@
+diff --git a/source/mact/src/control.cpp b/source/mact/src/control.cpp
+--- a/source/mact/src/control.cpp
++++ b/source/mact/src/control.cpp
+@@ -491,10 +491,15 @@ static void controlUpdateAxisState(int index, ControlInfo *const info)
+         if (index <= CONTROLLER_AXIS_LEFTY || (joystick.isGameController && (index <= CONTROLLER_AXIS_RIGHTY)))
+             axisScaled10k = min(10000, joydist(joystick.pAxis[index & ~1], joystick.pAxis[index | 1]) * 10000 / 32767);
+ 
+-        if (axisScaled10k < a.deadzone)
++        if (axisScaled10k <= a.deadzone)
+             out->analog = 0;
++        else if (a.mapping.analogmap == analog_turning || a.mapping.analogmap == analog_lookingupanddown)
++        {
++            float const x = min(1.f, float(axisScaled10k - a.deadzone) / (a.saturation - a.deadzone));
++            out->analog = Blrintf(in * x * x * 10000.f / axisScaled10k);
++        }
+         else
+             out->analog = in * (axisScaled10k - a.deadzone) / a.saturation;
+     }
+ 
+     if (controllerDigitizeAxis(index))
