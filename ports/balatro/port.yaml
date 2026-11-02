@@ -1,0 +1,49 @@
+title: Balatro
+catalog: 19
+summary: Joker Poker with PortMaster's UI changes. I'm literally a fool, what's your excuse? 
+tags: [card, strategy]
+status: playable
+review: draft
+accent: crimson
+added: 2026-11-02
+icon: icon.png
+
+engine:
+  name: LÖVE 11.5 with a patch layer based on PortMaster's Balatro port
+  url: https://github.com/PortsMaster/PortMaster-New/tree/main/ports/balatro
+  license: MIT
+
+data:
+  kind: user
+  sources:
+    - name: Steam
+      url: https://store.steampowered.com/app/2379780/Balatro/
+      note: Balatro.exe from the Windows version, or Balatro.love from the macOS version.
+  files:
+    - { from: "Balatro.exe", to: ports/balatro/love/game/ }
+
+controls:
+  - { button: dpad, action: "Move between cards and buttons" }
+  - { button: L-stick, action: "Move between cards and buttons" }
+  - { button: A, action: "Select" }
+  - { button: B, action: "Back" }
+  - { button: X, action: "Play hand" }
+  - { button: Y, action: "Discard" }
+  - { button: L1, action: "Previous tab" }
+  - { button: R1, action: "Next tab" }
+  - { button: START, action: "Options" }
+  - { button: R-stick, action: "Press: FPS counter" }
+
+shots:
+  - { file: shots/play.png }
+  - { file: shots/shop.png }
+
+licenses:
+  - ports/balatro/LICENSE-PortMaster.txt
+  - ports/balatro/LICENSE-Nunito.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-02
+    changes:
+      - First release.

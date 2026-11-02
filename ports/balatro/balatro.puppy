@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Balatro
+DESCRIPTION=Balatro, poker roguelike deck builder
+ICON=/home/player/.local/share/icons/balatro.png
+COMMAND=/home/player/ports/balatro/run.sh
+COLOR=#dc2847

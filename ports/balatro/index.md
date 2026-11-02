@@ -1,0 +1,6 @@
+- Copy `Balatro.exe` from the Windows game, or `Balatro.love` from the macOS game, into `ports/balatro/love/game`. Saves are kept in the same folder.
+- The game file is patched in memory on every start and is never changed.
+- Runs at about 30 fps in play and in the shop, 25 fps on the blind selection screen. Starts in about 5 seconds.
+- Foil, holographic, polychrome and negative cards keep their look but do not animate. The swirling background is a flat colour.
+- Japanese, Korean and Chinese are not available: their fonts do not fit in memory.
+- Tested with version 1.0.1o of the game.
