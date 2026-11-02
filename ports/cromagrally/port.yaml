@@ -48,3 +48,6 @@ releases:
     date: 2026-11-02
     changes:
       - First release.
+    file: cromagrally-2026.11.1.zip
+    size: 129464145
+    sha256: 3a684846c58b6cabc650f81ccf5135e78ffe242a6f932a4aa5e9f25908c8d04a
