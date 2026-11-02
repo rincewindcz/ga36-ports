@@ -1,0 +1,6 @@
+- Runs at about 50 fps. Set `frame_rate=30` in `ports/testdrive/testdrive.conf` for a steadier picture.
+- The gearbox is manual, so shift up as the revs rise.
+- On the name screen, Up and Down pick the letter, Left and Right move, A confirms.
+- Select leaves the drive. Select again at the title, then A, quits to the launcher.
+- High scores are in `ports/testdrive/data/SCORES`.
+- The Amiga features of the engine are off: they need the Amiga disk and have not been tested here.

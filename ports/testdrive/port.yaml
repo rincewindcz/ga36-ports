@@ -1,0 +1,52 @@
+title: Test Drive (Enhanced)
+catalog: 17
+summary: Accolade's 1987 Test Drive, enhanced by Kylofon.
+tags: [racing, retro]
+status: playable
+review: draft
+accent: green
+added: 2026-11-02
+icon: icon.png
+
+engine:
+  name: Test Drive Enhanced
+  url: https://github.com/kylofon/testdrive-enhanced
+  commit: fdb7972b5d75578a8849a15d8aef7201b208827e
+  license: MIT
+
+data:
+  kind: user
+  sources:
+    - name: Test Drive (1987, DOS)
+      note: The files of the original PC release.
+  files:
+    - { from: "TDEGA.EXE, CARS.TXT, SCORES, TDSND.SND", to: ports/testdrive/data/ }
+    - { from: "*.PES, *.BIN, *.SS", to: ports/testdrive/data/ }
+
+controls:
+  - { button: dpad, action: "Steer, up accelerates, down brakes; moves in menus" }
+  - { button: L-stick, action: "Steer; moves in menus" }
+  - { button: A, action: "Accelerate; confirm" }
+  - { button: B, action: "Brake; erase a letter" }
+  - { button: R1, action: "Shift up" }
+  - { button: X, action: "Shift up" }
+  - { button: L1, action: "Shift down" }
+  - { button: Y, action: "Shift down" }
+  - { button: START, action: "Pause; confirm" }
+  - { button: SELECT, action: "Leave the drive or menu" }
+
+shots:
+  - { file: shots/title.png, caption: "Title screen" }
+  - { file: shots/showroom.png, caption: "Choosing the car" }
+  - { file: shots/road.png, caption: "The cliff road" }
+  - { file: shots/valley.png, caption: "The open side, with the valley" }
+
+licenses:
+  - ports/testdrive/LICENSE.txt
+  - ports/testdrive/LICENSE-amiga-topaz.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-02
+    changes:
+      - First release.

@@ -1,0 +1,172 @@
+diff --git a/src/game/flow.c b/src/game/flow.c
+index 2399808..6435f5f 100644
+--- a/src/game/flow.c
++++ b/src/game/flow.c
+@@ -180,7 +180,8 @@ dos:
+     gfx_select_target(gfx_screen_desc());
+     gfx_set_text_colours(0x0F, 1);
+     draw_text_centered(DSTR(0x63), 100);                 /* " BACK TO DOS (Y or other key) ? " */
+-    if (toupper_c(getkey_wait()) != 'Y') goto intro;
++    r = toupper_c(getkey_wait());
++    if (r != 'Y' && r != 0x0D) goto intro;               /* PORT: Enter, the pad has no Y key to type */
+ 
+     /* PORT: DS:008A (Hercules) is never set, so always the EGA shutdown. */
+     gfx_shutdown();
+diff --git a/src/game/flow_screens.c b/src/game/flow_screens.c
+index 2b77227..1a75e55 100644
+--- a/src/game/flow_screens.c
++++ b/src/game/flow_screens.c
+@@ -42,13 +42,13 @@ int car_select(void)
+             return -1;
+         }
+         if (k == 1) { flow_song_stop(); return 1; }
+-        if (k == 0x4800) {
++        if (k == 0x4800 || k == 0x4D00) {                /* PORT: Right and Left too */
+             idx++;
+             if (DSS(DS_g_numCars) <= idx) idx = 0;
+             show_car(idx, -1);
+             continue;
+         }
+-        if (k == 0x5000) {
++        if (k == 0x5000 || k == 0x4B00) {
+             idx--;
+             if (idx < 0) idx = (s16)(DSS(DS_g_numCars) - 1);
+             show_car(idx, 1);
+diff --git a/src/host.c b/src/host.c
+index 719d9dc..18db0f1 100644
+--- a/src/host.c
++++ b/src/host.c
+@@ -40,6 +40,7 @@ static double samples_per_tick_frac;
+ 
+ static void process_events(void);
+ static void pool_shutdown(void);
++static void pad_update(void);
+ 
+ bool host_init(const char *dir, int window_scale)
+ {
+@@ -381,6 +382,69 @@ u8 host_kbd_shift_flags(void)
+     return f;
+ }
+ 
++/* PORT: the pad acts as the keyboard, so the game's driving and menu code stays as it is. The face buttons
++ * are named as on the console; SDL's mapping of this pad has A south, B east, X west, Y north. */
++enum {
++    PAD_UP = 1, PAD_DOWN = 2, PAD_LEFT = 4, PAD_RIGHT = 8, PAD_SHIFT_UP = 16, PAD_SHIFT_DOWN = 32,
++    PAD_ENTER = 64, PAD_ERASE = 128, PAD_PAUSE = 256, PAD_ESC = 512,
++};
++#define PAD_DIRS   (PAD_UP | PAD_DOWN | PAD_LEFT | PAD_RIGHT)
++#define PAD_STICK  16384
++#define PAD_REPEAT_DELAY_NS (400 * SDL_NS_PER_MS)
++#define PAD_REPEAT_NS       (120 * SDL_NS_PER_MS)
++
++static unsigned pad_held;
++
++static unsigned pad_read(bool driving)
++{
++    if (!gamepad) return 0;
++#define BTN(b) SDL_GetGamepadButton(gamepad, SDL_GAMEPAD_BUTTON_##b)
++    s16 ax = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTX);
++    s16 ay = SDL_GetGamepadAxis(gamepad, SDL_GAMEPAD_AXIS_LEFTY);
++    unsigned p = 0;
++    if (BTN(DPAD_LEFT) || ax < -PAD_STICK) p |= PAD_LEFT;
++    if (BTN(DPAD_RIGHT) || ax >= PAD_STICK) p |= PAD_RIGHT;
++    if (BTN(BACK)) p |= PAD_ESC;
++    if (driving) {
++        /* The stick only steers: a slanted stick must not lift off the throttle. */
++        if (BTN(DPAD_UP) || BTN(SOUTH)) p |= PAD_UP;
++        if (BTN(DPAD_DOWN) || BTN(EAST)) p |= PAD_DOWN;
++        if (BTN(RIGHT_SHOULDER) || BTN(WEST)) p |= PAD_SHIFT_UP;
++        if (BTN(LEFT_SHOULDER) || BTN(NORTH)) p |= PAD_SHIFT_DOWN;
++        if (BTN(START)) p |= PAD_PAUSE;
++    } else {
++        if (BTN(DPAD_UP) || ay < -PAD_STICK) p |= PAD_UP;
++        if (BTN(DPAD_DOWN) || ay >= PAD_STICK) p |= PAD_DOWN;
++        if (BTN(SOUTH) || BTN(START)) p |= PAD_ENTER;
++        if (BTN(EAST)) p |= PAD_ERASE;
++    }
++#undef BTN
++    return p;
++}
++
++/* Pressing pushes the key word, so a press shorter than a simulation step counts and menus see it; held
++ * directions repeat in the menus, once the game took the previous one. */
++static void pad_update(void)
++{
++    static const struct { unsigned bit; u16 key; } PAD_KEYS[] = {
++        { PAD_UP, 0x4800 }, { PAD_DOWN, 0x5000 }, { PAD_LEFT, 0x4B00 }, { PAD_RIGHT, 0x4D00 },
++        { PAD_SHIFT_UP, 0x1E61 }, { PAD_SHIFT_DOWN, 0x2C7A }, { PAD_ENTER, 0x1C0D }, { PAD_ERASE, 0x0E08 },
++        { PAD_PAUSE, 0x1970 }, { PAD_ESC, 0x011B },
++    };
++    static Uint64 repeat_ns;
++    bool driving = kb_active();
++    unsigned now = pad_read(driving), pressed = now & ~pad_held;
++    pad_held = now;
++    Uint64 t = SDL_GetTicksNS();
++    if (pressed & PAD_DIRS) repeat_ns = t + PAD_REPEAT_DELAY_NS;
++    if (!driving && (now & PAD_DIRS) && t >= repeat_ns && kbd_head == kbd_tail) {
++        pressed |= now & PAD_DIRS;
++        repeat_ns = t + PAD_REPEAT_NS;
++    }
++    for (size_t i = 0; i < SDL_arraysize(PAD_KEYS); i++)
++        if (pressed & PAD_KEYS[i].bit) kbd_push(PAD_KEYS[i].key);
++}
++
+ static bool held_keys = true;
+ 
+ void host_set_held_keys(bool on) { held_keys = on; }
+@@ -396,15 +460,15 @@ bool host_xt_key_down(u8 xt)
+     /* PORT: A, Z and the arrows are the keys of their actions (keybind.h); Home, PgUp, End, PgDn and the keypad
+      * keep their job. */
+     switch (xt) {
+-    case 0x1E: return kb_held(KB_SHIFT_UP);
+-    case 0x2C: return kb_held(KB_SHIFT_DOWN);
++    case 0x1E: return kb_held(KB_SHIFT_UP) || (pad_held & PAD_SHIFT_UP);
++    case 0x2C: return kb_held(KB_SHIFT_DOWN) || (pad_held & PAD_SHIFT_DOWN);
+     case 0x47: return ks[SDL_SCANCODE_HOME]     || KP(SDL_SCANCODE_KP_7);
+-    case 0x48: return kb_held(KB_ACCELERATE)    || KP(SDL_SCANCODE_KP_8);
++    case 0x48: return kb_held(KB_ACCELERATE)    || KP(SDL_SCANCODE_KP_8) || (pad_held & PAD_UP);
+     case 0x49: return ks[SDL_SCANCODE_PAGEUP]   || KP(SDL_SCANCODE_KP_9);
+-    case 0x4B: return kb_held(KB_STEER_LEFT)    || KP(SDL_SCANCODE_KP_4);
+-    case 0x4D: return kb_held(KB_STEER_RIGHT)   || KP(SDL_SCANCODE_KP_6);
++    case 0x4B: return kb_held(KB_STEER_LEFT)    || KP(SDL_SCANCODE_KP_4) || (pad_held & PAD_LEFT);
++    case 0x4D: return kb_held(KB_STEER_RIGHT)   || KP(SDL_SCANCODE_KP_6) || (pad_held & PAD_RIGHT);
+     case 0x4F: return ks[SDL_SCANCODE_END]      || KP(SDL_SCANCODE_KP_1);
+-    case 0x50: return kb_held(KB_BRAKE)         || KP(SDL_SCANCODE_KP_2);
++    case 0x50: return kb_held(KB_BRAKE)         || KP(SDL_SCANCODE_KP_2) || (pad_held & PAD_DOWN);
+     case 0x51: return ks[SDL_SCANCODE_PAGEDOWN] || KP(SDL_SCANCODE_KP_3);
+ #undef KP
+     default:   return false;
+@@ -536,6 +600,7 @@ static void process_events(void)
+             break;
+         }
+     }
++    pad_update();
+ }
+ 
+ bool host_joy_read(s16 *x, s16 *y, u8 *buttons)
+diff --git a/src/platform/input.c b/src/platform/input.c
+index 1348c87..54660f6 100644
+--- a/src/platform/input.c
++++ b/src/platform/input.c
+@@ -6,6 +6,8 @@
+  * from the joystick reader). The internal helpers below thread that DX value explicitly. */
+ #include "input.h"
+ 
++#include <string.h>
++
+ #include "../host.h"
+ #include "../symbols.h"
+ #include "gfx.h"
+@@ -374,6 +376,12 @@ int text_input_line(char *buf, int maxlen, s16 x, s16 y, u16 timeout)
+         if (key == 0x4D00) {                    /* Right */
+             draw_glyph((s16)(x + (pos << 3)), y, cur_h);
+             if (len - 1 > pos) pos++;
++        } else if (key == 0x4800 || key == 0x5000) {   /* PORT: Up, Down pick the letter (pad) */
++            static const char LETTERS[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.";
++            const char *at = strchr(LETTERS, toupper_c(buf[pos]));
++            int n = (int)sizeof LETTERS - 1, l = at ? (int)(at - LETTERS) : 0;
++            buf[pos] = LETTERS[(l + (key == 0x4800 ? 1 : n - 1)) % n];
++            gfx_draw_text(buf, x, y);
+         } else if (key == 0x4B00) {             /* Left */
+             draw_glyph((s16)(x + (pos << 3)), y, cur_h);
+             if (pos != 0) pos--;

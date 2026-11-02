@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Test Drive
+DESCRIPTION=Accolade's 1987 driving game (Test Drive Enhanced)
+ICON=/home/player/.local/share/icons/testdrive.png
+COMMAND=/home/player/ports/testdrive/run.sh
+COLOR=#5bd16e

@@ -1,0 +1,436 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 829edc5..8c9227b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -15,6 +15,9 @@ file(GLOB_RECURSE TD_AMIGA_SOURCES CONFIGURE_DEPENDS src/amiga/*.c)
+ add_executable(testdrive-enhanced ${TD_SOURCES})
+ target_include_directories(testdrive-enhanced PRIVATE src)
+ target_link_libraries(testdrive-enhanced PRIVATE SDL3::SDL3)
++if(NOT WIN32)
++    target_link_libraries(testdrive-enhanced PRIVATE m)
++endif()
+ 
+ if(MSVC)
+     target_compile_options(testdrive-enhanced PRIVATE /W3)
+diff --git a/README.md b/README.md
+index 89fcf78..d9ff72b 100644
+--- a/README.md
++++ b/README.md
+@@ -74,6 +74,7 @@ Or `make run GAME_DIR=Game SCALE=3`.
+ | `--game-dir DIR` | Folder with the original game files (default `Game`) |
+ | `--scale N` | Initial window size as a multiple of 320×240 (default 3) |
+ | `--res-scale N` | Output resolution as a multiple of 320×200 (default 4 = 1280×800, range 1–8; lower it on slower CPUs) |
++| `--supersample N` | Road samples per output pixel per axis: `1` (none), `2` or `4` (default 2, 4 at `--res-scale 1`) |
+ | `--frame-rate FPS` | Drawing rate while driving (default 60, `0` = unpaced) |
+ | `--sprite-detail max\|auto` | Sprite sizes: `max` (default) the most detailed sprite everywhere, `auto` chosen by distance |
+ | `--bios-keys` | Original keyboard behaviour for driving: keys act only through key repeat (see below) |
+diff --git a/src/enhanced/enhanced.c b/src/enhanced/enhanced.c
+index da87984..5500596 100644
+--- a/src/enhanced/enhanced.c
++++ b/src/enhanced/enhanced.c
+@@ -62,6 +62,7 @@ static int win_y0 = DOS_Y0, win_y1 = DOS_Y1;
+ enum { OP_COPY, OP_OR, OP_AND, OP_XOR };
+ 
+ static bool active, dirty;
++int enh_supersample;                /* --supersample: samples per output pixel per axis; 0 = by output scale */
+ 
+ /* Resolution: output OK x (320 x WIN_H), rendered at SSF x SSF samples per output pixel, so Q internal
+  * pixels per original pixel. Buffers are (re)allocated by ensure_buffers(). */
+@@ -498,8 +499,14 @@ static double screen_y(double Y, double Z) { return 70.0 - 180.0 * Y / (Z < 1 ?
+ /* road: drawn near to far; a pixel is written once (zbuf == Z_INF means empty). All passes work on  */
+ /* a band of internal scanlines [b0, b1) so that bands can run in parallel.                         */
+ 
+-static int ss_col(double x) { return (int)ceil(x * Q - 0.5); }
+-static int ss_row(double y) { return (int)ceil((y - WIN_Y0) * Q - 0.5); }
++/* ceil() is a libm call on ARMv7, and these run for every span */
++static int ceil_int(double v)
++{
++    int i = (int)v;
++    return i + (v > i);
++}
++static int ss_col(double x) { return ceil_int(x * Q - 0.5); }
++static int ss_row(double y) { return ceil_int((y - WIN_Y0) * Q - 0.5); }
+ static double row_y(int r) { return WIN_Y0 + (r + 0.5) / Q; }
+ 
+ static void clear_rows(int b0, int b1)
+@@ -605,11 +612,11 @@ static void cliff_face(const Row *a, const Row *b, bool nearest, int b0, int b1)
+     if (rmax > b1) rmax = b1;
+     if (rmax <= b0 || (!nearest && strip_offscreen(ax, a->sy, bx, b->sy, cliff_lean, CLIFF_JAG, b0, rmax))) return;
+     for (int r = rmax - 1; r >= b0; r--) {
++        if (row_full(r)) continue;
+         double yc = row_y(r);
+         double ha = a->sy - yc, hb = b->sy - yc, jag = cliff_jag[r];
+         double xa = ax + cliff_lean * ha + jag_at(jag, ha), xb = bx + cliff_lean * hb + jag_at(jag, hb);
+         if (!nearest && xa > 320 && xb > 320) break;          /* only moves further right upwards */
+-        if (row_full(r)) continue;
+         double dx = xb - xa;
+         if (!nearest && fabs(dx) < 1e-9) continue;
+         int c0 = ss_col(xa < xb ? xa : xb), c1 = nearest ? RW : ss_col(xa < xb ? xb : xa);
+@@ -621,18 +628,27 @@ static void cliff_face(const Row *a, const Row *b, bool nearest, int b0, int b1)
+         u8 *pm = mat + (size_t)r * RW;
+         float *pz = zbuf + (size_t)r * RW;
+         bool all = true, low = yc > (a->sy < b->sy ? a->sy : b->sy);   /* the foot test can fail */
+-        double dt = fabs(dx) < 1e-9 ? 0.0 : 1.0 / (dx * Q);
+-        double t0 = (c0 + 0.5 - xa * Q) * dt;
++        float dt = fabs(dx) < 1e-9 ? 0.0f : (float)(1.0 / (dx * Q));
++        float t0 = (float)(c0 + 0.5 - xa * Q) * dt;
++        float fiza = (float)iza, fizd = (float)(izb - iza);
++        float fya = (float)a->sy, fyd = (float)(b->sy - a->sy), fyc = (float)yc;
+         int filled = 0;
++        float last_t = -1.0f, z = 0;       /* past the strip's edges t clamps: no division per pixel */
++        u32 tint = 0;
+         for (int c = c0; c < end; c++) {
+             if (pz[c] != Z_INF) continue;
+-            double t = t0 + (c - c0) * dt;
++            float t = t0 + (float)(c - c0) * dt;
+             t = t < 0 ? 0 : t > 1 ? 1 : t;
+-            if (low && yc > a->sy + (b->sy - a->sy) * t) { all = false; continue; }   /* below the road edge */
+-            double z = 1.0 / (iza + (izb - iza) * t);
+-            pc[c] = cliff_tab[zlut_idx(z)];
++            if (low && fyc > fya + fyd * t) { all = false; continue; }   /* below the road edge */
++            if (t != last_t) {
++                last_t = t;
++                z = 1.0f / (fiza + fizd * t);
++                int zi = (int)(z / (float)ZLUT_STEP);
++                tint = cliff_tab[zi >= ZLUT_N ? ZLUT_N - 1 : zi];
++            }
++            pc[c] = tint;
+             pm[c] = 2;
+-            pz[c] = (float)z;
++            pz[c] = z;
+             filled++;
+         }
+         row_filled[r] += filled;
+@@ -816,6 +832,7 @@ static u32 cloud_at(double x, double y)
+ static float *mist;                         /* RH: ground-mist weight above the horizon */
+ 
+ #define HORIZON_HAZE 0.6f                   /* haze where the valley floor meets the mountains */
++#define VALLEY_STEP 4                       /* output columns between valley noise samples */
+ #define MIST_ROWS    5.0                    /* mist falloff above the horizon, in game rows */
+ 
+ static void prepare_background(void)
+@@ -852,8 +869,8 @@ static void prepare_background(void)
+     }
+ }
+ 
+-/* Valley floor for output row oy (output resolution). */
+-static void valley_row(int oy)
++/* Valley floor for output row oy, columns [x0, x1) (output resolution). */
++static void valley_row(int oy, int x0, int x1)
+ {
+     u32 *dst = valley + (size_t)oy * OW;
+     double y = WIN_Y0 + (oy + 0.5) / OK;
+@@ -864,7 +881,11 @@ static void valley_row(int oy)
+     float hz = (float)(HORIZON_HAZE * (1.0 - exp(-D / 45000.0)));
+     double contrast = exp(-D / 30000.0);
+     Rgb fa = hex(C_FIELD_A), fb = hex(C_FIELD_B), fc = hex(C_FIELD_C), wood = hex(C_WOOD), hazec = hex(C_HAZE);
+-    for (int x = 0; x < OW; x++) {
++    /* The noise is far smoother than a pixel: sampled every VALLEY_STEP columns on a fixed grid, the rest
++     * interpolated, except with supersampling, which asks for the full quality. */
++    int step = SSF == 1 ? VALLEY_STEP : 1;
++    int first = x0 / step * step, last = (x1 + step - 1) / step * step;
++    for (int x = first; x <= last && x < OW + step; x += step) {
+         double lat = ((x + 0.5) / OK - 120.0) * D / 150.0;
+         double wx = cam_x + D * bg_sv + lat * bg_cv, wz = cam_z + D * bg_cv - lat * bg_sv;
+         double n = 0.6 * noise2(wx / 2600.0, wz / 2600.0, 11) + 0.4 * noise2(wx / 800.0, wz / 800.0, 23);
+@@ -872,13 +893,40 @@ static void valley_row(int oy)
+         Rgb c = n < 0.5 ? mix(fa, fb, (float)(n * 2.0)) : mix(fb, fc, (float)((n - 0.5) * 2.0));
+         double w = (noise2(wx / 420.0, wz / 420.0, 37) - 0.62) * 3.0 * contrast;
+         if (w > 0) c = mix(c, wood, (float)(w > 1 ? 1 : w));
+-        dst[x] = pack(mix(c, hazec, hz));
++        u32 v = pack(mix(c, hazec, hz));
++        if (x < OW) dst[x] = v;
++        if (step > 1 && x > first) {
++            u32 p = dst[x - step];
++            for (int i = 1; i < step && x - step + i < OW; i++) dst[x - step + i] = blend(p, v, (float)i / (float)step);
++        }
++    }
++}
++
++/* Valley columns [lo, hi) (output resolution) the road and cliffs left open on output row oy. */
++static void valley_range(int oy, int *lo, int *hi)
++{
++    *lo = OW;
++    *hi = 0;
++    for (int r = oy * SSF; r < (oy + 1) * SSF; r++) {
++        if (row_full(r)) continue;
++        const float *pz = zbuf + (size_t)r * RW;
++        int a = 0, b = RW;
++        while (a < b && pz[a] != Z_INF) a++;
++        while (b > a && pz[b - 1] != Z_INF) b--;
++        if (a >= b) continue;
++        if (a / SSF < *lo) *lo = a / SSF;
++        if ((b - 1) / SSF + 1 > *hi) *hi = (b - 1) / SSF + 1;
+     }
+ }
+ 
+ static void draw_background(int b0, int b1)
+ {
+-    for (int oy = b0 / SSF; oy < b1 / SSF; oy++) valley_row(oy);
++    for (int oy = b0 / SSF; oy < b1 / SSF; oy++) {
++        int lo, hi;
++        if (WIN_Y0 + (oy + 0.5) / OK <= HORIZON) continue;
++        valley_range(oy, &lo, &hi);
++        if (lo < hi) valley_row(oy, lo, hi);
++    }
+     u32 mf = blend(C_MTN_FAR, C_HAZE, 0.2f), mn = C_MTN_NEAR, sn = 0xEAF1F6;
+     for (int r = b0; r < b1; r++) {
+         if (row_full(r)) continue;
+@@ -888,16 +936,18 @@ static void draw_background(int b0, int b1)
+         const float *pz = zbuf + (size_t)r * RW;
+         int oy = r / SSF;
+         const u32 *vr = WIN_Y0 + (oy + 0.5) / OK > HORIZON ? valley + (size_t)oy * OW : NULL;
++        /* mf already carries 0.2 haze: 1 - 0.8 * (1 - 0.5) = HORIZON_HAZE at the foot */
++        u32 near_c = blend(mn, C_HAZE, 0.05f + (HORIZON_HAZE - 0.05f) * mist[r]);
++        u32 far_c = blend(mf, C_HAZE, 0.05f + 0.45f * mist[r]), snow_c = blend(sn, C_HAZE, 0.05f + 0.45f * mist[r]);
+         for (int c = 0; c < RW; c++) {
+             if (pz[c] != Z_INF) continue;
+             pm[c] = 4;                              /* the original's open side is colour 4 */
+             if (vr) {
+                 pc[c] = vr[c / SSF];
+             } else if (yc >= near_top[c]) {
+-                pc[c] = blend(mn, C_HAZE, 0.05f + (HORIZON_HAZE - 0.05f) * mist[r]);
++                pc[c] = near_c;
+             } else if (yc >= far_top[c]) {
+-                /* mf already carries 0.2 haze: 1 - 0.8 * (1 - 0.5) = HORIZON_HAZE at the foot */
+-                pc[c] = blend(yc < snow[c] ? sn : mf, C_HAZE, 0.05f + 0.45f * mist[r]);
++                pc[c] = yc < snow[c] ? snow_c : far_c;
+             } else {
+                 u32 cl = amiga.sky ? cloud_at((c + 0.5) / Q, yc) : 0;
+                 pc[c] = cl ? cl : sky[r];
+@@ -1478,6 +1528,7 @@ static float sharpen = 0.4f;               /* unsharp mask amount after the reso
+ /* Output rows [o0, o1): average SSF x SSF samples in linear light. */
+ static void resolve_rows(int o0, int o1)
+ {
++    if (SSF == 1) return;                   /* the samples are the output: shown_rows() */
+     u32 n = (u32)(SSF * SSF), h = n / 2;
+     for (int y = o0; y < o1; y++) {
+         u32 *dst = soft + (size_t)y * OW;
+@@ -1566,7 +1617,7 @@ static bool ensure_buffers(void)
+     if (k == OK && col && buf_h == WIN_H) return true;
+     buf_h = WIN_H;
+     OK = k;
+-    SSF = k == 1 ? 4 : 2;
++    SSF = enh_supersample > 0 ? enh_supersample : k == 1 ? 4 : 2;
+     Q = OK * SSF;
+     OW = 320 * OK;
+     OH = WIN_H * OK;
+@@ -1600,11 +1651,12 @@ static bool ensure_buffers(void)
+ }
+ 
+ #define MAX_BANDS 64
++#define BANDS     8                 /* every band walks all road rows: no more than two cores can use */
+ static int nbands, band_edge[MAX_BANDS + 1];   /* output rows */
+ 
+ static void plan_bands(void)
+ {
+-    nbands = OH / 8 < 24 ? OH / 8 : 24;
++    nbands = OH / 8 < BANDS ? OH / 8 : BANDS;
+     if (nbands < 1) nbands = 1;
+     for (int i = 0; i <= nbands; i++) band_edge[i] = OH * i / nbands;
+ }
+@@ -1761,11 +1813,19 @@ static bool ov_dirty(void)
+     return d;
+ }
+ 
+-static void ov_draw(u32 *px, int k)
++#define OV_BANDS 4
++
++static const u32 *shown_rows(void) { return SSF == 1 ? col : out; }
++
++static u32 *ov_px;
++
++static void ov_rows(int band, void *ctx)
+ {
+-    if (!active || k != OK) return;
+-    uint64_t t0 = host_time_ns();
+-    for (int y = WIN_Y0; y < WIN_Y1; y++) {
++    (void)ctx;
++    int k = OK, y0 = WIN_Y0 + WIN_H * band / OV_BANDS, y1 = WIN_Y0 + WIN_H * (band + 1) / OV_BANDS;
++    u32 *px = ov_px;
++    const u32 *src = shown_rows();
++    for (int y = y0; y < y1; y++) {
+         const u8 *p0 = gfx_ega_plane(0) + y * 40, *p1 = gfx_ega_plane(1) + y * 40;
+         const u8 *p2 = gfx_ega_plane(2) + y * 40, *p3 = gfx_ega_plane(3) + y * 40;
+         const u8 *s0 = vram_snap[0] + y * 40, *s1 = vram_snap[1] + y * 40;
+@@ -1780,12 +1840,20 @@ static void ov_draw(u32 *px, int k)
+                 if ((ega && cover[y * 320 + x]) || (changed & (0x80 >> b))) continue;
+                 for (int j = 0; j < k; j++) {
+                     u32 *d = px + (size_t)(y * k + j) * OW + (size_t)x * k;
+-                    const u32 *s = out + (size_t)((y - WIN_Y0) * k + j) * OW + (size_t)x * k;
++                    const u32 *s = src + (size_t)((y - WIN_Y0) * k + j) * OW + (size_t)x * k;
+                     for (int i = 0; i < k; i++) d[i] = s[i];
+                 }
+             }
+         }
+     }
++}
++
++static void ov_draw(u32 *px, int k)
++{
++    if (!active || k != OK) return;
++    uint64_t t0 = host_time_ns();
++    ov_px = px;
++    host_parallel_for(OV_BANDS, ov_rows, NULL);
+     const u32 *dash = amiga_dash_layer();              /* AMIGA dashboards: the cockpit over everything */
+     if (dash)
+         for (int y = 0; y < 200; y++)
+@@ -1867,7 +1935,7 @@ void enh_frame(void)
+     sort_objects();
+     plan_bands();
+     host_parallel_for(nbands, render_band, NULL);
+-    host_parallel_for(nbands, sharpen_band, NULL);
++    if (SSF > 1) host_parallel_for(nbands, sharpen_band, NULL);
+     update_cover();
+     active = true;
+     dirty = true;
+diff --git a/src/enhanced/enhanced.h b/src/enhanced/enhanced.h
+index 9afea87..e952deb 100644
+--- a/src/enhanced/enhanced.h
++++ b/src/enhanced/enhanced.h
+@@ -3,6 +3,7 @@
+ #include "../mem.h"
+ 
+ void enh_init(void);              /* installs the screen overlay; call before the game starts */
++extern int enh_supersample;       /* --supersample: 1 = none, 2 = 2x2, 4 = 4x4; 0 = by output scale */
+ extern bool enh_sprite_detail_max; /* --sprite-detail: true = max (the largest sprite scale everywhere) */
+ 
+ void enh_stage_begin(void);       /* after the stage buffers are set up */
+diff --git a/src/main.c b/src/main.c
+index a6be741..29831f0 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -4,6 +4,7 @@
+  *                           [--sprite-detail max|auto] [--bios-keys] [--keys NAME=CODE,...]
+  *                           [--amiga LIST] [--amiga-disk PATH] [--check]
+  *   --res-scale  output resolution as a multiple of 320x200 (default 4, 1..8)
++ *   --supersample road samples per output pixel per axis (1, 2 or 4; default 2, 4 at --res-scale 1)
+  *   --frame-rate drawing rate while driving (default 60; 0 = as fast as possible)
+  *   --sprite-detail max (default): the most detailed sprite of every car and object at every distance;
+  *                auto: the sprite scale chosen by distance
+@@ -37,7 +38,8 @@ int game_main(void);   /* game/flow.c: port of main() at image 0x0010 */
+ static int usage(const char *prog)
+ {
+     fprintf(stderr,
+-            "usage: %s [--game-dir DIR] [--scale N] [--fullscreen] [--res-scale N] [--frame-rate FPS]\n"
++            "usage: %s [--game-dir DIR] [--scale N] [--fullscreen] [--res-scale N] [--supersample N]\n"
++            "          [--frame-rate FPS]\n"
+             "          [--sprite-detail max|auto] [--bios-keys] [--keys NAME=CODE,...]\n"
+             "          [--amiga all|intro,menu,dashboards,music,projection,sky,cliffs,traffic,cops,wide-roads,signs]\n"
+             "          [--amiga-disk PATH] [--check]\n", prog);
+@@ -55,6 +57,7 @@ int main(int argc, char **argv)
+         if (!strcmp(a, "--game-dir") && v) { dir = v; i++; }
+         else if (!strcmp(a, "--scale") && v) { scale = atoi(v); i++; }
+         else if (!strcmp(a, "--res-scale") && v) { res_scale = atoi(v); i++; }
++        else if (!strcmp(a, "--supersample") && v) { enh_supersample = atoi(v); i++; }
+         else if (!strcmp(a, "--fullscreen")) fullscreen = true;
+         else if (!strcmp(a, "--check")) check = true;
+         else if (!strcmp(a, "--bios-keys")) host_set_held_keys(false);
+diff --git a/src/platform/gfx.c b/src/platform/gfx.c
+index 17b86c8..9ff4fad 100644
+--- a/src/platform/gfx.c
++++ b/src/platform/gfx.c
+@@ -171,39 +171,38 @@ void gfx_set_overlay(bool (*dirty)(void), void (*draw)(u32 *xrgb, int scale))
+     ega.dirty = true;
+ }
+ 
+-bool gfx_compose(u32 *xrgb)
++#define COMPOSE_BANDS 4
++
++static u32 compose_base[320 * 200];
++static u32 *compose_big;                    /* base scaled up to the output size */
++static u32 compose_pal[16];
++static u32 *compose_out;
++static bool compose_changed;
++static u8 compose_planes[4][40 * 200];      /* the planes in compose_base */
++static bool compose_full;                   /* the palette or the scale changed: every row again */
++
++static void compose_rows(int band, void *ctx)
+ {
+-    static u32 base[320 * 200];
+-    static u32 *big;                        /* base scaled up to the output size */
+-    static int big_scale;
+-    int k = out_scale, ow = 320 * k;
+-    if (big_scale != k) {
+-        free(big);
+-        big = k > 1 ? malloc((size_t)ow * (size_t)(200 * k) * sizeof *big) : NULL;
+-        big_scale = big || k == 1 ? k : 0;
+-        if (!big_scale) return false;
+-        ega.dirty = true;
+-    }
+-    bool base_changed = ega.dirty;
+-    bool ov_changed = overlay_dirty && overlay_dirty();
+-    if (!base_changed && !ov_changed) return false;
+-    if (base_changed) {
+-        ega.dirty = false;
+-        u32 pal[16];
+-        for (int i = 0; i < 16; i++) pal[i] = ega_rgb(ega.palette[i]);
+-        for (int y = 0; y < 200; y++) {
++    (void)ctx;
++    u32 *base = compose_base, *big = compose_big;
++    int k = out_scale, ow = 320 * k, y0 = 200 * band / COMPOSE_BANDS, y1 = 200 * (band + 1) / COMPOSE_BANDS;
++    if (compose_changed) {
++        for (int y = y0; y < y1; y++) {
++            bool same = !compose_full;
++            for (int p = 0; p < 4 && same; p++)
++                same = memcmp(compose_planes[p] + y * 40, ega.plane[p] + y * 40, 40) == 0;
++            if (same) continue;
++            for (int p = 0; p < 4; p++) memcpy(compose_planes[p] + y * 40, ega.plane[p] + y * 40, 40);
+             for (int bx = 0; bx < 40; bx++) {
+                 u32 off = (u32)(y * 40 + bx);
+                 u8 p0 = ega.plane[0][off], p1 = ega.plane[1][off], p2 = ega.plane[2][off], p3 = ega.plane[3][off];
+                 for (int b = 0; b < 8; b++) {
+                     int s = 7 - b;
+                     int idx = (p0 >> s & 1) | (p1 >> s & 1) << 1 | (p2 >> s & 1) << 2 | (p3 >> s & 1) << 3;
+-                    base[y * 320 + bx * 8 + b] = pal[idx];
++                    base[y * 320 + bx * 8 + b] = compose_pal[idx];
+                 }
+             }
+-        }
+-        if (k > 1) {
+-            for (int y = 0; y < 200; y++) {
++            if (k > 1) {
+                 u32 *row = big + (size_t)y * k * ow;
+                 for (int x = 0; x < 320; x++)
+                     for (int i = 0; i < k; i++) row[x * k + i] = base[y * 320 + x];
+@@ -211,8 +210,38 @@ bool gfx_compose(u32 *xrgb)
+             }
+         }
+     }
+-    if (k > 1) memcpy(xrgb, big, (size_t)ow * (size_t)(200 * k) * sizeof *big);
+-    else memcpy(xrgb, base, sizeof base);
++    if (k > 1) memcpy(compose_out + (size_t)(y0 * k) * ow, big + (size_t)(y0 * k) * ow,
++                      (size_t)ow * (size_t)((y1 - y0) * k) * sizeof *big);
++    else memcpy(compose_out + y0 * 320, base + y0 * 320, (size_t)(y1 - y0) * 320 * sizeof *base);
++}
++
++bool gfx_compose(u32 *xrgb)
++{
++    static int big_scale;
++    int k = out_scale, ow = 320 * k;
++    if (big_scale != k) {
++        free(compose_big);
++        compose_big = k > 1 ? malloc((size_t)ow * (size_t)(200 * k) * sizeof *compose_big) : NULL;
++        big_scale = compose_big || k == 1 ? k : 0;
++        if (!big_scale) return false;
++        ega.dirty = true;
++        compose_full = true;
++    }
++    bool base_changed = ega.dirty;
++    bool ov_changed = overlay_dirty && overlay_dirty();
++    if (!base_changed && !ov_changed) return false;
++    if (base_changed) {
++        ega.dirty = false;
++        for (int i = 0; i < 16; i++) {
++            u32 c = ega_rgb(ega.palette[i]);
++            if (c != compose_pal[i]) compose_full = true;
++            compose_pal[i] = c;
++        }
++    }
++    compose_changed = base_changed;
++    compose_out = xrgb;
++    host_parallel_for(COMPOSE_BANDS, compose_rows, NULL);
++    if (base_changed) compose_full = false;
+     if (overlay_draw) overlay_draw(xrgb, k);
+     return true;
+ }
