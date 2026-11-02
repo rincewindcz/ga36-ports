@@ -1,0 +1,4 @@
+- Runs at the original 30 fps. The game loads for a few seconds on a black screen.
+- Copy `data.win` and all `.ogg` files from the Windows game into `ports/undertale/data`.
+- Saves and settings are in `ports/undertale/data`.
+- Tested with the 1.0 release of the game.

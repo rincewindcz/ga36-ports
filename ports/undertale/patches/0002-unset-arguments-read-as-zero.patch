@@ -1,0 +1,23 @@
+diff --git a/src/vm_builtins.c b/src/vm_builtins.c
+index 63609ad..60e59af 100644
+--- a/src/vm_builtins.c
++++ b/src/vm_builtins.c
+@@ -1111,7 +1111,7 @@ RValue VMBuiltins_getVariable(VMContext* ctx, Instance* inst, int16_t builtinVar
+                 val.ownsReference = false;
+                 return val;
+             }
+-            return RValue_makeUndefined();
++            return IS_WAD14_OR_BELOW(ctx) ? RValue_makeReal(0.0) : RValue_makeUndefined();
+         }
+         case BUILTIN_VAR_ARGUMENT0:
+         case BUILTIN_VAR_ARGUMENT1:
+@@ -1135,7 +1135,8 @@ RValue VMBuiltins_getVariable(VMContext* ctx, Instance* inst, int16_t builtinVar
+                 val.ownsReference = false;
+                 return val;
+             }
+-            return RValue_makeUndefined();
++            // Old runners read a script argument the caller did not pass as 0. Undertale 1.0 relies on it: OBJ_WRITER calls SCR_TEXTTYPE with no arguments.
++            return IS_WAD14_OR_BELOW(ctx) ? RValue_makeReal(0.0) : RValue_makeUndefined();
+         }
+ 
+         // Keyboard

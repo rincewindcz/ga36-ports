@@ -1,0 +1,20 @@
+diff --git a/src/runner_keyboard.c b/src/runner_keyboard.c
+index b8e5a0c..e46fadd 100644
+--- a/src/runner_keyboard.c
++++ b/src/runner_keyboard.c
+@@ -110,6 +110,7 @@ bool RunnerKeyboard_checkReleased(RunnerKeyboardState* kb, int32_t gmlKeyCode) {
+ 
+ void RunnerKeyboard_simulatePress(RunnerKeyboardState* kb, int32_t gmlKeyCode) {
+     if (!isValidKey(gmlKeyCode)) return;
++    gmlKeyCode = mapKey(kb, gmlKeyCode);
+     kb->keyDown[gmlKeyCode] = true;
+     kb->keyPressed[gmlKeyCode] = true;
+     kb->lastKey = gmlKeyCode;
+@@ -117,6 +118,7 @@ void RunnerKeyboard_simulatePress(RunnerKeyboardState* kb, int32_t gmlKeyCode) {
+ 
+ void RunnerKeyboard_simulateRelease(RunnerKeyboardState* kb, int32_t gmlKeyCode) {
+     if (!isValidKey(gmlKeyCode)) return;
++    gmlKeyCode = mapKey(kb, gmlKeyCode);
+     kb->keyDown[gmlKeyCode] = false;
+     kb->keyReleased[gmlKeyCode] = true;
+ }

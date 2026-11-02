@@ -1,0 +1,69 @@
+diff --git a/src/gl/gl_renderer.c b/src/gl/gl_renderer.c
+index 5c514eb..40d27df 100644
+--- a/src/gl/gl_renderer.c
++++ b/src/gl/gl_renderer.c
+@@ -1199,8 +1199,11 @@ static void glEndFrameEnd(Renderer* renderer) {
+         GLboolean scissorWasEnabled = glIsEnabled(GL_SCISSOR_TEST);
+         if (scissorWasEnabled) glDisable(GL_SCISSOR_TEST);
+ 
++        // The window has an alpha channel and the display blends it with black: keep it opaque.
++        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+         glClear(GL_COLOR_BUFFER_BIT);
++        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
+ 
+         glViewport(0, 0, gl->windowW, gl->windowH);
+ 
+@@ -1215,6 +1218,7 @@ static void glEndFrameEnd(Renderer* renderer) {
+         renderer->vtable->drawSurface(renderer, appId, 0, 0, gl->gameW, gl->gameH, (float)sx, (float)sy, scaleX, scaleY, 0.0f, 0xFFFFFF, 1.0f);
+         flushBatch(gl);
+ 
++        glColorMask(gl->colorWriteR, gl->colorWriteG, gl->colorWriteB, gl->colorWriteA);
+         glEnable(GL_BLEND);
+         if (scissorWasEnabled) glEnable(GL_SCISSOR_TEST);
+     }
+@@ -1320,6 +1324,29 @@ static bool resolveSpriteTexture(GLRenderer* gl, int32_t tpagIndex, TexturePageI
+     return true;
+ }
+ 
++// True when a quad cannot change the target: fully transparent under an additive-style blend, or outside the clip volume.
++// The Mali-400 spends tens of milliseconds binning huge off-screen quads, and Undertale draws hundreds of them in its late fights.
++static bool quadIsInvisible(GLRenderer* gl, float x0, float y0, float x1, float y1, float x2, float y2, float x3, float y3, uint8_t alpha) {
++    bool blendKeepsTarget = gl->blendEnable && (gl->currentBlendMode == bm_normal || gl->currentBlendMode == bm_add);
++    if (alpha == 0 && blendKeepsTarget && gl->base.currentShader == -1) return true;
++
++    const float* m = gl->base.gmlMatrices[MATRIX_WORLD_VIEW_PROJECTION].m;
++    const float xs[4] = { x0, x1, x2, x3 };
++    const float ys[4] = { y0, y1, y2, y3 };
++    float z = gl->base.drawDepth;
++    int left = 0, right = 0, below = 0, above = 0;
++    for (int i = 0; i < 4; i++) {
++        float cx = m[0] * xs[i] + m[4] * ys[i] + m[8] * z + m[12];
++        float cy = m[1] * xs[i] + m[5] * ys[i] + m[9] * z + m[13];
++        float cw = m[3] * xs[i] + m[7] * ys[i] + m[11] * z + m[15];
++        left += cx < -cw;
++        right += cx > cw;
++        below += cy < -cw;
++        above += cy > cw;
++    }
++    return left == 4 || right == 4 || below == 4 || above == 4;
++}
++
+ // Emits a single textured quad into the batch given 4 final screen-space corners (TL, TR, BR, BL), 4 UVs forming a rect (u0,v0)-(u1,v1), and a flat color/alpha.
+ // Handles texture rebinding and batch flushing.
+ static void emitTexturedQuad(
+@@ -1333,11 +1360,13 @@ static void emitTexturedQuad(
+     float alpha
+ ) {
+     GLModernRenderer* modernGl = (GLModernRenderer*) gl;
++    uint8_t ca = floatToUnormByte(alpha);
++
++    if (quadIsInvisible(gl, x0, y0, x1, y1, x2, y2, x3, y3, ca)) return;
+ 
+     flushIfNeededAndSetActiveState(gl, BATCHTYPE_QUAD, texId);
+ 
+     GlVertex* verts = gl->vertexData + modernGl->batchCount * VERTICES_PER_QUAD;
+-    uint8_t ca = floatToUnormByte(alpha);
+ 
+     verts[0].x = x0; verts[0].y = y0; verts[0].u = u0; verts[0].v = v0; verts[0].r = r0; verts[0].g = g0; verts[0].b = b0; verts[0].a = ca;
+     for (int i = 0; i < 4; i++) verts[i].z = gl->base.drawDepth;

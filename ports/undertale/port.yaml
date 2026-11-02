@@ -1,0 +1,52 @@
+title: Undertale
+catalog: 16
+summary: Toby Fox's 2015 RPG on Butterscotch, an open GameMaker runner.
+tags: [rpg, adventure]
+status: playable
+review: draft
+accent: crimson
+added: 2026-11-02
+icon: icon.png
+
+engine:
+  name: Butterscotch
+  url: https://github.com/ButterscotchRunner/Butterscotch
+  commit: c1260061d1eaeb73974c6a2aafe923604414f82f
+  license: AGPL-3.0
+
+data:
+  kind: user
+  sources:
+    - name: Steam
+      url: https://store.steampowered.com/app/391540/Undertale/
+      note: The Windows version.
+    - name: GOG
+      url: https://www.gog.com/en/game/undertale
+      note: The Windows version.
+  files:
+    - { from: "data.win", to: ports/undertale/data/ }
+    - { from: "*.ogg", to: ports/undertale/data/ }
+
+controls:
+  - { button: dpad, action: "Move" }
+  - { button: L-stick, action: "Move" }
+  - { button: A, action: "Confirm" }
+  - { button: B, action: "Cancel" }
+  - { button: X, action: "Menu" }
+  - { button: Y, action: "Menu" }
+  - { button: START, action: "Menu" }
+
+shots:
+  - { file: shots/intro.png }
+  - { file: shots/snowdin.png }
+
+licenses:
+  - ports/undertale/LICENSE.txt
+  - ports/undertale/LICENSE-miniz.txt
+  - ports/undertale/LICENSE-bzip2.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-02
+    changes:
+      - First release.

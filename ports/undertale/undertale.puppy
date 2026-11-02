@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Undertale
+DESCRIPTION=Undertale (Butterscotch)
+ICON=/home/player/.local/share/icons/undertale.png
+COMMAND=/home/player/ports/undertale/run.sh
+COLOR=#dc2847

@@ -1,0 +1,26 @@
+diff --git a/src/audio/miniaudio/ma_audio_system.c b/src/audio/miniaudio/ma_audio_system.c
+index 63d53f8..fdf0ea8 100644
+--- a/src/audio/miniaudio/ma_audio_system.c
++++ b/src/audio/miniaudio/ma_audio_system.c
+@@ -129,7 +129,7 @@ static void maInit(AudioSystem* audio, DataWin* dataWin, FileSystem* fileSystem)
+     deviceConfig.playback.format   = ma_format_f32;
+     deviceConfig.playback.channels = 2;
+     deviceConfig.periods           = 3;
+-    deviceConfig.periodSizeInMilliseconds = 10;
++    deviceConfig.periodSizeInMilliseconds = 20;
+     deviceConfig.dataCallback = ma_engine_data_callback_internal;
+     deviceConfig.pUserData    = &ma->engine;
+     ma_result deviceResult = ma_device_init(NULL, &deviceConfig, &ma->device);
+diff --git a/src/backends/sdl2.c b/src/backends/sdl2.c
+index e61be06..048bf5e 100644
+--- a/src/backends/sdl2.c
++++ b/src/backends/sdl2.c
+@@ -450,6 +450,8 @@ static void mapSdl2ToGml(SDL_GameController* gc, GamepadSlot* slot) {
+     if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_B)) slot->buttonDown[1] = true;
+     if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_X)) slot->buttonDown[2] = true;
+     if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_Y)) slot->buttonDown[3] = true;
++    // Undertale's menu key is on Y: X and Start open it too.
++    if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_X) || SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_START)) slot->buttonDown[3] = true;
+ 
+     if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) slot->buttonDown[4] = true;
+     if (SDL_GameControllerGetButton(gc, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) slot->buttonDown[5] = true;
