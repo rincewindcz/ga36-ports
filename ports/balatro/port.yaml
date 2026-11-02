@@ -48,5 +48,5 @@ releases:
     changes:
       - First release.
     file: balatro-2026.11.1.zip
-    size: 3085659
-    sha256: dddc40d4a67de4a01748a1ac47a6c829c4a16b60aab19c3e1336fdf4bbcb73ef
+    size: 3085880
+    sha256: 544d49472c092dc90737b5751619f4a5715049e1c427d12d96acac3266d70625
