@@ -50,3 +50,6 @@ releases:
     date: 2026-11-02
     changes:
       - First release.
+    file: undertale-2026.11.1.zip
+    size: 1006748
+    sha256: ef6690a849cbfed568a0baf5fc00db5d06cbcd9e8726170a71175541cbb5c310
