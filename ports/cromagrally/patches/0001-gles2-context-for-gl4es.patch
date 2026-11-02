@@ -1,0 +1,25 @@
+diff --git a/Source/3D/OGL_Support.c b/Source/3D/OGL_Support.c
+index 67c8591..e0607f4 100644
+--- a/Source/3D/OGL_Support.c
++++ b/Source/3D/OGL_Support.c
+@@ -648,6 +648,7 @@ void OGL_DrawScene(void (*drawRoutine)(void))
+ 
+            /* SWAP THE BUFFS */
+ 
++	glFlush();										// gl4es draws its pending glBegin/glEnd batch
+ 	SDL_GL_SwapWindow(gSDLWindow);					// end render loop
+ }
+ 
+diff --git a/Source/Boot.cpp b/Source/Boot.cpp
+index 38a6df3..4b6852d 100644
+--- a/Source/Boot.cpp
++++ b/Source/Boot.cpp
+@@ -146,7 +146,7 @@ retryVideo:
+ 	}
+ 
+ 	// Create window
+-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
++	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+ 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+ 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+ 

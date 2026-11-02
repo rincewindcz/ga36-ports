@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Cro-Mag Rally
+DESCRIPTION=Cro-Mag Rally (Pangea Software, Jorio port)
+ICON=/home/player/.local/share/icons/cromagrally.png
+COMMAND=/home/player/ports/cromagrally/run.sh
+COLOR=#ffb020

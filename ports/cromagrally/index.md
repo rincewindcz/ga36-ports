@@ -1,0 +1,3 @@
+- Runs at 35 to 45 fps in a race, about 30 in heavy dust.
+- Steering is on the left stick. The dpad only moves in menus; steering can be rebound in the game's settings.
+- Settings and saves are in `.config/CroMagRally` in the home folder.

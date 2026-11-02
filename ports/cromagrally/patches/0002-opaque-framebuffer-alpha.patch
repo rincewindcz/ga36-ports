@@ -1,0 +1,17 @@
+diff --git a/Source/3D/OGL_Support.c b/Source/3D/OGL_Support.c
+--- a/Source/3D/OGL_Support.c
++++ b/Source/3D/OGL_Support.c
+@@ -646,6 +646,13 @@
+ 			/* END RENDER */
+ 			/**************/
+ 
++				// SDL kmsdrm scans out ARGB and the display blends it with black. Blending
++				// leaves alpha below 1, so restore it; the clear color has alpha 1.
++
++	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
++	glClear(GL_COLOR_BUFFER_BIT);
++	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
++
+            /* SWAP THE BUFFS */
+ 
+ 	glFlush();										// gl4es draws its pending glBegin/glEnd batch

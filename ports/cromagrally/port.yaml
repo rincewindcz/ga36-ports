@@ -1,0 +1,50 @@
+title: Cro-Mag Rally
+catalog: 18
+summary: Pangea's prehistoric kart racer, with weapons, in the Jorio port.
+tags: [racing, 3d]
+status: playable
+review: draft
+accent: amber
+added: 2026-11-02
+icon: icon.png
+
+engine:
+  name: Cro-Mag Rally
+  url: https://github.com/jorio/CroMagRally
+  commit: 370fc175466d6ced3612afb7b171c958cb6b76e1
+  license: CC-BY-NC-SA 4.0
+
+data:
+  kind: included
+  license: CC-BY-NC-SA 4.0
+  credit: Pangea Software, Iliyas Jorio
+  license_file: ports/cromagrally/LICENSE.txt
+
+controls:
+  - { button: L-stick, action: "Steer; moves in menus" }
+  - { button: dpad, action: "Moves in menus" }
+  - { button: A, action: "Accelerate; confirm" }
+  - { button: B, action: "Reverse; back" }
+  - { button: Y, action: "Throw forward" }
+  - { button: X, action: "Throw backward; delete" }
+  - { button: R-stick, action: "Up throws forward, down throws backward" }
+  - { button: R2, action: "Brake" }
+  - { button: L2, action: "Rear view" }
+  - { button: L1, action: "Camera; previous in menus" }
+  - { button: R1, action: "Next in menus" }
+  - { button: START, action: "Pause" }
+  - { button: SELECT, action: "Back" }
+
+shots:
+  - { file: shots/menu.png, caption: "Main menu" }
+  - { file: shots/race.png, caption: "The desert track, at the start" }
+
+licenses:
+  - ports/cromagrally/LICENSE.txt
+  - ports/cromagrally/lib/LICENSE-gl4es.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-02
+    changes:
+      - First release.
