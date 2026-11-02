@@ -9,7 +9,7 @@ added: 2026-11-02
 icon: icon.png
 
 engine:
-  name: LÖVE 11.5 with a patch layer based on PortMaster's Balatro port
+  name: LÖVE 11.5 + patches (PortMaster's and custom)
   url: https://github.com/PortsMaster/PortMaster-New/tree/main/ports/balatro
   license: MIT
 
