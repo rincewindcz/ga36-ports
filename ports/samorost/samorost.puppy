@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Samorost
+DESCRIPTION=Samorost 1 (Amanita Design) on a native player
+ICON=/home/player/.local/share/icons/samorost.png
+COMMAND=/home/player/ports/samorost/run.sh
+COLOR=#5bd16e

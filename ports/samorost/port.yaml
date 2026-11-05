@@ -1,0 +1,50 @@
+title: Samorost
+catalog: 20
+summary: Amanita Design's magical first point&click adventure on a new native Flash player.
+tags: [adventure, puzzle, point-and-click]
+status: playable
+review: draft
+accent: green
+added: 2026-11-03
+icon: icon.png
+
+engine:
+  name: Samorost player (AVM2 interpreter on SDL3 and GLES 2)
+  url: https://github.com/rincewindcz/samorost-player
+  commit: e6b3706d25fa3a8a0a868d56ad696261e0272574
+  license: MIT
+
+data:
+  kind: user
+  sources:
+    - name: GOG
+      url: https://www.gog.com/en/game/samorost_1
+      note: Free. The Windows version, 1.12.0.
+  files:
+    - { from: "Data/Main.swf", to: ports/samorost/data/ }
+    - { from: "Data/*.lvl", to: ports/samorost/data/ }
+    - { from: "Data/desktop/", to: ports/samorost/data/desktop/ }
+
+controls:
+  - { button: dpad, action: "Move the pointer" }
+  - { button: L-stick, action: "Move the pointer" }
+  - { button: A, action: "Click, hold to drag" }
+  - { button: B, action: "Click, hold to drag" }
+  - { button: START, action: "Menu" }
+
+shots:
+  - { file: shots/start.png }
+  - { file: shots/lyzar.png }
+
+licenses:
+  - ports/samorost/LICENSE.txt
+  - ports/samorost/LICENSE-minimp3.txt
+  - ports/samorost/lib/licenses/SOURCES.txt
+  - ports/samorost/lib/licenses/libjxr0t64.txt
+  - ports/samorost/lib/licenses/liblzma5.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-03
+    changes:
+      - First release.

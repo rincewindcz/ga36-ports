@@ -1,0 +1,6 @@
+- Copy `Main.swf`, the `.lvl` files and the `desktop` folder from the game's `Data` folder into `ports/samorost/data`.
+- The first start converts the game's textures into `ports/samorost/cache` (about 250 MB, half a minute on a black screen).
+- Runs at 50 to 55 fps. Changing scenes pauses for up to two seconds.
+- Saves are in `ports/samorost/save`. The game saves by itself when a scene changes.
+- Achievements are not available.
+- Tested with version 1.12.0 from GOG.
