@@ -1,0 +1,60 @@
+title: Quake
+catalog: 21
+summary: id Software's 1996 shooter on QuakeSpasm, with the shareware episode.
+tags: [shooter, fps, 3d]
+status: playable
+review: draft
+accent: amber
+added: 2026-11-05
+icon: icon.png
+
+engine:
+  name: QuakeSpasm
+  url: https://github.com/sezero/quakespasm
+  commit: e8795a79273f2823661727265d0617106e282bea
+  license: GPL-2.0-or-later
+
+data:
+  kind: included
+  license: Quake shareware licence
+  credit: id Software
+  license_file: ports/quake/shareware/SLICNSE.TXT
+
+install:
+  - "The shareware episode is unpacked from the bundled `quake106.zip` on the first start."
+  - "Full version: copy `pak0.pak` and `pak1.pak` from the `id1` folder of the DOS CD, Steam or GOG release to `ports/quake/data/id1/`, replacing the shareware `pak0.pak`."
+  - "Music: Ogg tracks go to `ports/quake/data/id1/music/` as `track02.ogg` to `track11.ogg`."
+
+controls:
+  - { button: L-stick, action: "Move" }
+  - { button: R-stick, action: "Look" }
+  - { button: R2, action: "Fire" }
+  - { button: L2, action: "Jump, swim up" }
+  - { button: R1, action: "Next weapon" }
+  - { button: L1, action: "Previous weapon" }
+  - { button: A, action: "Jump, swim up; menu confirm" }
+  - { button: B, action: "Swim down; menu back" }
+  - { button: X, action: "Walk while held" }
+  - { button: Y, action: "Center view" }
+  - { button: dpad, action: "Move and turn; menu navigation" }
+  - { button: START, action: "Menu" }
+  - { button: SELECT, action: "Scores" }
+
+shots:
+  - { file: shots/menu.png, caption: "Main menu" }
+  - { file: shots/play.png }
+
+licenses:
+  - ports/quake/LICENSE.txt
+  - ports/quake/shareware/SLICNSE.TXT
+  - ports/quake/lib/licenses/gl4es.txt
+  - ports/quake/lib/licenses/lhasa.txt
+  - ports/quake/lib/licenses/icon.txt
+  - ports/quake/lib/licenses/libvorbisidec1.txt
+  - ports/quake/lib/licenses/libogg0.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-05
+    changes:
+      - First release.

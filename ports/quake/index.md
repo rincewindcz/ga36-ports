@@ -1,0 +1,2 @@
+- The shareware episode is unpacked from the bundled, unmodified `quake106.zip` on the first start, which takes a few seconds.
+- Settings and saves are in `ports/quake/data/id1`. The pad layout is written to `config.cfg` only when it is missing; binds changed in the menu are kept.

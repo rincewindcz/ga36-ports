@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Quake
+DESCRIPTION=Quake (id Software, QuakeSpasm)
+ICON=/home/player/.local/share/icons/quake.png
+COMMAND=/home/player/ports/quake/run.sh
+COLOR=#ffb020
