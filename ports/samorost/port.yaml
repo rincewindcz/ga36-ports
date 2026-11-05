@@ -48,3 +48,6 @@ releases:
     date: 2026-11-03
     changes:
       - First release.
+    file: samorost-2026.11.1.zip
+    size: 819220
+    sha256: 4e88b50108b6240efeb7b6d6137fb28eff7e26cac02e1b24863c424a5b84bc3d
