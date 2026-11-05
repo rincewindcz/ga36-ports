@@ -58,3 +58,6 @@ releases:
     date: 2026-11-05
     changes:
       - First release.
+    file: quake-2026.11.1.zip
+    size: 10225228
+    sha256: 138123de429f8db8acd6acc90bdb9a0e6cbd7e01389445931b055fe4912dcd1b
