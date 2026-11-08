@@ -21,7 +21,7 @@ index 7f1c807..558315d 100644
  }
  
  CanvasImpl::~CanvasImpl()
-@@ -104,12 +109,100 @@ void CanvasImpl::processEvents()
+@@ -104,12 +109,101 @@ void CanvasImpl::processEvents()
                  }
              }
          } break;
@@ -82,7 +82,8 @@ index 7f1c807..558315d 100644
 +        break;
 +    case SDL_CONTROLLER_BUTTON_START:
 +        if (selectHeld) {
-+            exit(0);
++            Micro::field_249 = false;
++            return;
 +        }
 +        canvas->pressedEsc();
 +        return;

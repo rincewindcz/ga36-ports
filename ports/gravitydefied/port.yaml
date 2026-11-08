@@ -35,6 +35,10 @@ licenses:
   - ports/gravitydefied/LICENSE.txt
 
 releases:
+  - version: 2026.11.1
+    date: 2026-11-08
+    changes:
+      - Progress, settings and highscores are kept after quitting the game.
   - version: 2026.10.1
     date: 2026-10-30
     changes:

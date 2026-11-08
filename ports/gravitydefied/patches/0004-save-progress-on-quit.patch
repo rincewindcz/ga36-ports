@@ -1,0 +1,24 @@
+diff --git a/src/rms/RecordEnumerationImpl.cpp b/src/rms/RecordEnumerationImpl.cpp
+--- a/src/rms/RecordEnumerationImpl.cpp
++++ b/src/rms/RecordEnumerationImpl.cpp
+@@ -54,7 +54,7 @@
+ 
+ void RecordEnumerationImpl::destroy()
+ {
+-    data.clear();
++    reset();
+ }
+ 
+ void RecordEnumerationImpl::serialize(FileStream* outStream)
+diff --git a/src/lcdui/CanvasImpl.cpp b/src/lcdui/CanvasImpl.cpp
+--- a/src/lcdui/CanvasImpl.cpp
++++ b/src/lcdui/CanvasImpl.cpp
+@@ -87,7 +87,7 @@
+     while (SDL_PollEvent(&e) != 0) {
+         switch (e.type) {
+         case SDL_QUIT:
+-            exit(0); // IMPROVE This is a super dumb way to finish the game, but it works
++            Micro::field_249 = false;
+             break;
+         case SDL_KEYDOWN: {
+             int keyCode = convertKeyCharToKeyCode(e.key.keysym.sym);
