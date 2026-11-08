@@ -39,6 +39,9 @@ releases:
     date: 2026-11-08
     changes:
       - Progress, settings and highscores are kept after quitting the game.
+    file: gravitydefied-2026.11.1.zip
+    size: 265337
+    sha256: ef9dd43f92333ad7005579f1e63a94cb9b990bc51f398e7f3e276006dc6db167
   - version: 2026.10.1
     date: 2026-10-30
     changes:
