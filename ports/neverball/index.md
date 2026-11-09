@@ -1,0 +1,3 @@
+- Neverputt, the minigolf game, starts from the icon at the bottom left of the title screen.
+- Downloading extra level sets from the internet is turned off.
+- Settings, scores and replays are in `.neverball` in the home folder.

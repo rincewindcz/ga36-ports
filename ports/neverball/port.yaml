@@ -1,0 +1,48 @@
+title: Neverball
+catalog: 23
+summary: Tilt the floor to roll a ball through an obstacle course before time runs out.
+tags: [puzzle, arcade, 3d]
+status: playable
+review: draft
+accent: blue
+added: 2026-11-09
+icon: icon.png
+
+engine:
+  name: Neverball
+  url: https://github.com/Neverball/neverball
+  commit: 9e7e477a792e3a2dbe2a928c632a9b5b520ddbc3
+  license: GPL-2.0-or-later
+
+data:
+  kind: included
+  license: GPL-2.0-or-later, with the exceptions listed in LICENSE.md
+  credit: Neverball authors
+  license_file: ports/neverball/LICENSE.md
+
+controls:
+  - { button: L-stick, action: "Tilt the floor; moves in menus" }
+  - { button: dpad, action: "Moves in menus" }
+  - { button: R-stick, action: "Rotates the view" }
+  - { button: L1, action: "Rotate the view left; previous page in menus" }
+  - { button: R1, action: "Rotate the view right; next page in menus" }
+  - { button: L2, action: "Faster view rotation" }
+  - { button: X, action: "Camera mode" }
+  - { button: A, action: "Confirm" }
+  - { button: B, action: "Back" }
+  - { button: START, action: "Pause" }
+
+shots:
+  - { file: shots/title.png, caption: "Title screen" }
+  - { file: shots/play.png, caption: "Neverball Easy, level 3" }
+
+licenses:
+  - ports/neverball/LICENSE.md
+  - ports/neverball/legal/license-GPL-2.0.txt
+  - ports/neverball/lib/licenses/gl4es.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-09
+    changes:
+      - First release.

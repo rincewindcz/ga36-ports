@@ -18,7 +18,8 @@ SYSROOT_DEBS=(libc6 libc6-dev linux-libc-dev libgcc-14-dev libgcc-s1 libstdc++-1
               libjsoncpp-dev libjsoncpp26 libjpeg62-turbo-dev libjpeg62-turbo
               libepoxy-dev libepoxy0 libsdl2-image-dev libsdl2-image-2.0-0
               libopenmpt-dev libopenmpt0t64 libmpg123-0t64
-              libjxr-dev libjxr0t64 liblzma-dev liblzma5)
+              libjxr-dev libjxr0t64 liblzma-dev liblzma5
+              libsdl2-ttf-dev libsdl2-ttf-2.0-0)
 CROSS_FLAGS="--target=arm-linux-gnueabihf --sysroot=$SYSROOT -march=armv7-a -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard"
 CROSS_CC="clang $CROSS_FLAGS"
 CROSS_CXX="clang++ $CROSS_FLAGS"

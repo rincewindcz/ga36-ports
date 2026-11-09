@@ -1,0 +1,13 @@
+diff --git a/share/fetch_null.c b/share/fetch_null.c
+index f3fe94e6..a745da8f 100644
+--- a/share/fetch_null.c
++++ b/share/fetch_null.c
+@@ -14,6 +14,8 @@
+ 
+ #include "fetch.h"
+ 
++unsigned long FETCH_EVENT = (unsigned long) -1;
++
+ void fetch_enable(int enable)
+ {
+ }

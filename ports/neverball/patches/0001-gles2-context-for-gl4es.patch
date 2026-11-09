@@ -1,0 +1,55 @@
+diff --git a/share/glext.c b/share/glext.c
+index 81e4f87e..15e162fe 100644
+--- a/share/glext.c
++++ b/share/glext.c
+@@ -21,6 +21,12 @@
+ 
+ struct gl_info gli;
+ 
++#ifdef USE_GL4ES
++/* SDL would resolve extension functions to the native GLES driver. */
++extern void *gl4es_GetProcAddress(const char *name);
++#define SDL_GL_GetProcAddress gl4es_GetProcAddress
++#endif
++
+ /*---------------------------------------------------------------------------*/
+ 
+ #if !ENABLE_OPENGLES && !defined(__EMSCRIPTEN__)
+diff --git a/share/video.c b/share/video.c
+index 6218f99d..f0aad927 100644
+--- a/share/video.c
++++ b/share/video.c
+@@ -242,6 +242,11 @@ int video_mode(int f, int w, int h)
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
++#elif defined(USE_GL4ES)
++    /* gl4es renders the OpenGL 1.x calls into the GLES 2 context SDL creates. */
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
++    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+ #endif
+ 
+     SDL_GL_SetAttribute(SDL_GL_STEREO,             stereo);
+@@ -419,6 +424,21 @@ void video_swap(void)
+ 
+     snapshot_take();
+ 
++#ifdef USE_GL4ES
++    {
++        /* The display blends a non-opaque framebuffer with black. */
++        GLfloat clear[4];
++
++        glGetFloatv(GL_COLOR_CLEAR_VALUE, clear);
++        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
++        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
++        glClear(GL_COLOR_BUFFER_BIT);
++        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
++        glClearColor(clear[0], clear[1], clear[2], clear[3]);
++        glFlush();
++    }
++#endif
++
+     SDL_GL_SwapWindow(window);
+ 
+     /* Accumulate time passed and frames rendered. */

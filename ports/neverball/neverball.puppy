@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Neverball
+DESCRIPTION=Neverball (tilt the floor, roll the ball)
+ICON=/home/player/.local/share/icons/neverball.png
+COMMAND=/home/player/ports/neverball/run.sh
+COLOR=#4f8cff
