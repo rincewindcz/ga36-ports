@@ -48,3 +48,6 @@ releases:
     date: 2026-11-09
     changes:
       - First release.
+    file: brogue-2026.11.1.zip
+    size: 925517
+    sha256: 49f621296057f7d55774d41f39250ed81b9261be84b2be54a40b4dda665e982f
