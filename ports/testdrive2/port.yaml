@@ -47,3 +47,6 @@ releases:
     date: 2026-11-09
     changes:
       - First release.
+    file: testdrive2-2026.11.1.zip
+    size: 206691
+    sha256: 0939c5647ab083fcb97b11b5b509600a558de6deed0529ab57285d8cfcf3f584
