@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Brogue
+DESCRIPTION=Brogue: Community Edition
+ICON=/home/player/.local/share/icons/brogue.png
+COMMAND=/home/player/ports/brogue/run.sh
+COLOR=#9b7bff

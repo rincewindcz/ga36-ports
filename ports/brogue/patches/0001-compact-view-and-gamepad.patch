@@ -1,0 +1,999 @@
+diff --git a/src/brogue/Buttons.c b/src/brogue/Buttons.c
+index 3428c54..b79b535 100644
+--- a/src/brogue/Buttons.c
++++ b/src/brogue/Buttons.c
+@@ -186,11 +186,88 @@ void initializeButtonState(buttonState *state,
+     state->winY         = winY;
+     state->winWidth     = winWidth;
+     state->winHeight    = winHeight;
++    state->keyboardNavigation = false;
+     for (int i=0; i < state->buttonCount; i++) {
+         state->buttons[i] = buttons[i];
+     }
+ }
+ 
++boolean isButtonNavigationKey(signed long key) {
++    return key == UP_ARROW || key == DOWN_ARROW || key == LEFT_ARROW || key == RIGHT_ARROW || key == RETURN_KEY;
++}
++
++static boolean buttonIsFocusable(const buttonState *state, int i) {
++    return (state->buttons[i].flags & B_DRAW) && (state->buttons[i].flags & B_ENABLED);
++}
++
++static boolean buttonHasHotkey(const buttonState *state, signed long key) {
++    for (int i=0; i < state->buttonCount; i++) {
++        for (int k = 0; k < 10 && state->buttons[i].hotkey[k]; k++) {
++            if (state->buttons[i].hotkey[k] == key) {
++                return true;
++            }
++        }
++    }
++    return false;
++}
++
++// Moves the focus to the nearest button in the direction (dx, dy). Vertical moves wrap around;
++// horizontal moves without a button on the same row go to the previous or next button.
++static void moveButtonFocus(buttonState *state, int dx, int dy) {
++    const int from = state->buttonFocused;
++    int best = -1;
++    long bestScore = 0;
++
++    if (from < 0 || !buttonIsFocusable(state, from)) {
++        for (int n = 0; n < state->buttonCount; n++) {
++            const int i = (dx < 0 || dy < 0) ? state->buttonCount - 1 - n : n;
++            if (buttonIsFocusable(state, i)) {
++                state->buttonFocused = i;
++                return;
++            }
++        }
++        return;
++    }
++
++    const int fromX = state->buttons[from].x * 2 + strLenWithoutEscapes(state->buttons[from].text);
++    const int fromY = state->buttons[from].y;
++    for (int wrap = 0; wrap < 2 && best < 0; wrap++) {
++        for (int i = 0; i < state->buttonCount; i++) {
++            if (i == from || !buttonIsFocusable(state, i)) {
++                continue;
++            }
++            const int ddx = state->buttons[i].x * 2 + strLenWithoutEscapes(state->buttons[i].text) - fromX;
++            const int ddy = state->buttons[i].y - fromY;
++            long score;
++            if (dy) {
++                if (!wrap && ddy * dy <= 0) {
++                    continue;
++                }
++                // When wrapping, the farthest row in the opposite direction comes first.
++                score = (wrap ? (long) (100 - abs(ddy)) : abs(ddy)) * 1000 + abs(ddx);
++            } else {
++                if (wrap || ddy != 0 || ddx * dx <= 0) {
++                    continue;
++                }
++                score = abs(ddx);
++            }
++            if (best < 0 || score < bestScore) {
++                best = i;
++                bestScore = score;
++            }
++        }
++    }
++    for (int n = 1; best < 0 && dx && n < state->buttonCount; n++) {
++        const int i = (from + dx * n + state->buttonCount * n) % state->buttonCount;
++        if (buttonIsFocusable(state, i)) {
++            best = i;
++        }
++    }
++    if (best >= 0) {
++        state->buttonFocused = best;
++    }
++}
++
+ // Processes one round of user input, and updates `state` accordingly.
+ // If a button is pressed, draws to the screen and briefly pauses, but then
+ // immediately reverts the screen state to beforce `processButtonInput` was caled.
+@@ -257,6 +334,23 @@ short processButtonInput(buttonState *state, boolean *canceled, rogueEvent *even
+     }
+ 
+     // Keystroke:
++    if (event->eventType == KEYSTROKE && state->keyboardNavigation) {
++        if (event->param1 == RETURN_KEY && state->buttonFocused >= 0 && buttonIsFocusable(state, state->buttonFocused)) {
++            state->buttonDepressed = state->buttonFocused;
++            state->buttonChosen = state->buttonDepressed;
++            return state->buttonChosen;
++        }
++        if (!buttonHasHotkey(state, event->param1)) {
++            switch (event->param1) {
++                case RETURN_KEY:  moveButtonFocus(state, 0, 1);  return -1;
++                case UP_ARROW:    moveButtonFocus(state, 0, -1); return -1;
++                case DOWN_ARROW:  moveButtonFocus(state, 0, 1);  return -1;
++                case LEFT_ARROW:  moveButtonFocus(state, -1, 0); return -1;
++                case RIGHT_ARROW: moveButtonFocus(state, 1, 0);  return -1;
++            }
++        }
++    }
++
+     if (event->eventType == KEYSTROKE) {
+ 
+         // Cycle through all of the hotkeys of all of the buttons.
+@@ -337,6 +431,7 @@ short buttonInputLoop(brogueButton *buttons,
+     canceled = false;
+     
+     initializeButtonState(&state, buttons, buttonCount, winX, winY, winWidth, winHeight);
++    state.keyboardNavigation = true;
+ 
+     do {
+         screenDisplayBuffer dbuf;
+diff --git a/src/brogue/IO.c b/src/brogue/IO.c
+index ee7975d..416f284 100644
+--- a/src/brogue/IO.c
++++ b/src/brogue/IO.c
+@@ -510,6 +510,7 @@ static void initializeMenuButtons(buttonState *state, brogueButton buttons[5]) {
+         buttonCount++;
+ 
+         strcpy(buttons[buttonCount].text,       "    Menu    ");
++        buttons[buttonCount].hotkey[0] = ACTION_MENU_KEY;
+         buttonCount++;
+     }
+ 
+@@ -1949,6 +1950,7 @@ void clearDisplayBuffer(screenDisplayBuffer *dbuf) {
+             dbuf->cells[i][j].opacity = 0;
+         }
+     }
++    dbuf->mapOverlay = false;
+ }
+ 
+ color colorFromComponents(const char rgb[3]) {
+@@ -1972,6 +1974,9 @@ void overlayDisplayBuffer(const screenDisplayBuffer *overBuf) {
+         for (int j=0; j<ROWS; j++) {
+             if (overBuf->cells[i][j].opacity != 0) {
+                 color foreColor, backColor, tempColor;
++                if (i > STAT_BAR_WIDTH && j >= MESSAGE_LINES && j < MESSAGE_LINES + DROWS) {
++                    displayBuffer.mapOverlay = true;
++                }
+                 enum displayGlyph character;
+                 backColor = colorFromComponents(overBuf->cells[i][j].backColorComponents);
+ 
+@@ -2717,6 +2722,15 @@ void executeKeystroke(signed long keystroke, boolean controlKey, boolean shiftKe
+     rogue.cautiousMode = false;
+ }
+ 
++short visibleColumns(void) {
++    return compactView ? COLS - STAT_BAR_WIDTH : COLS;
++}
++
++/// The column where text of `width` starts to be centered on the visible part of the screen.
++short centeredColumn(short width) {
++    return COLS - visibleColumns() + (visibleColumns() - width) / 2;
++}
++
+ boolean getInputTextString(char *inputText,
+                            const char *prompt,
+                            short maxLength,
+@@ -2730,6 +2744,10 @@ boolean getInputTextString(char *inputText,
+     screenDisplayBuffer dbuf;
+     SavedDisplayBuffer rbuf;
+ 
++    if (useDialogBox) {
++        maxLength = min(maxLength, visibleColumns() - 2);
++    }
++
+     // handle defaultEntry values exceeding maxLength
+     promptSuffixLen = strlen(promptSuffix);
+     defaultEntrylengthOverflow = strlen(defaultEntry) + promptSuffixLen - maxLength;
+@@ -2739,7 +2757,7 @@ boolean getInputTextString(char *inputText,
+ 
+     // x and y mark the origin for text entry.
+     if (useDialogBox) {
+-        x = (COLS - max(maxLength, strLenWithoutEscapes(prompt))) / 2;
++        x = centeredColumn(max(maxLength, strLenWithoutEscapes(prompt)));
+         y = ROWS / 2 - 1;
+         clearDisplayBuffer(&dbuf);
+         rectangularShading(x - 1, y - 2, max(maxLength, strLenWithoutEscapes(prompt)) + 2,
+@@ -2916,10 +2934,12 @@ void waitForAcknowledgment() {
+ 
+     do {
+         nextBrogueEvent(&theEvent, false, false, false);
+-        if (theEvent.eventType == KEYSTROKE && theEvent.param1 != ACKNOWLEDGE_KEY && theEvent.param1 != ESCAPE_KEY) {
++        if (theEvent.eventType == KEYSTROKE && theEvent.param1 != ACKNOWLEDGE_KEY && theEvent.param1 != ESCAPE_KEY
++            && theEvent.param1 != RETURN_KEY) {
+             flashTemporaryAlert(" -- Press space or click to continue -- ", 500);
+         }
+-    } while (!(theEvent.eventType == KEYSTROKE && (theEvent.param1 == ACKNOWLEDGE_KEY || theEvent.param1 == ESCAPE_KEY)
++    } while (!(theEvent.eventType == KEYSTROKE
++               && (theEvent.param1 == ACKNOWLEDGE_KEY || theEvent.param1 == ESCAPE_KEY || theEvent.param1 == RETURN_KEY)
+                || theEvent.eventType == MOUSE_UP));
+ }
+ 
+diff --git a/src/brogue/MainMenu.c b/src/brogue/MainMenu.c
+index 7c12bd8..2779081 100644
+--- a/src/brogue/MainMenu.c
++++ b/src/brogue/MainMenu.c
+@@ -224,12 +224,14 @@ static void initializeMenuFlames(boolean includeTitle,
+ 
+     if (includeTitle) {
+         // Wreathe the title in flames, and mask it in black.
++        const short titleX = (compactView ? centeredColumn(gameConst->mainMenuTitleWidth)
++                              : (COLS - gameConst->mainMenuTitleWidth) / 2 + MENU_TITLE_OFFSET_X);
+         for (i=0; i<gameConst->mainMenuTitleWidth; i++) {
+             for (j=0; j<gameConst->mainMenuTitleHeight; j++) {
+                 if (mainMenuTitle[j * gameConst->mainMenuTitleWidth + i] != ' ') {
+-                    colors[(COLS - gameConst->mainMenuTitleWidth)/2 + i + MENU_TITLE_OFFSET_X][(ROWS - gameConst->mainMenuTitleHeight)/2 + j + MENU_TITLE_OFFSET_Y] = &flameTitleColor;
++                    colors[titleX + i][(ROWS - gameConst->mainMenuTitleHeight)/2 + j + MENU_TITLE_OFFSET_Y] = &flameTitleColor;
+                     colorSourceCount++;
+-                    mask[(COLS - gameConst->mainMenuTitleWidth)/2 + i + MENU_TITLE_OFFSET_X][(ROWS - gameConst->mainMenuTitleHeight)/2 + j + MENU_TITLE_OFFSET_Y] = 100;
++                    mask[titleX + i][(ROWS - gameConst->mainMenuTitleHeight)/2 + j + MENU_TITLE_OFFSET_Y] = 100;
+                }
+             }
+         }
+@@ -335,6 +337,7 @@ static void initializeMenu(buttonState *menu, brogueButton *buttons, short butto
+     short height = maxY - minY;
+ 
+     initializeButtonState(menu, buttons, buttonCount, minX, minY, width, height);
++    menu->keyboardNavigation = true;
+ 
+     // Draws a rectangular shaded area of the specified color and opacity to a buffer. Position x, y is the upper/left.
+     // The shading effect outside the rectangle decreases with distance.
+@@ -542,14 +545,17 @@ static void titleMenu() {
+     short mainIndex = -1;
+     short flyoutIndex = -1;
+     windowpos bPos;
++    enum NGCommands shownFlyout = NG_NOTHING;
+ 
+     // Outer loop for menu navigation (showing/hiding the flyout menus). Repeat until the user selects
+     // a button with a command handled by mainBrogueJunction.
+     do {
+-        if (isFlyoutActive()) {
++        // Keep the flyout state, including the keyboard focus, while the same flyout stays open
++        if (isFlyoutActive() && rogue.nextGame != shownFlyout) {
+             bPos = getNextGameButtonPos(mainButtons);
+             initializeFlyoutMenu(&flyoutMenu, &flyoutShadowBuf, flyoutButtons, (windowpos){FLYOUT_X, bPos.window_y});
+         }
++        shownFlyout = isFlyoutActive() ? rogue.nextGame : NG_NOTHING;
+ 
+         // Inner input loop until the user selects a button or presses a key. For mouse input, a button
+         // is considered selected only on the MOUSE_UP event.
+@@ -599,6 +605,11 @@ static void titleMenu() {
+                             chooseGameVariant();
+                         }
+                     }
++                    // Navigation keys go to the flyout while it is open
++                    if (isFlyoutActive() && theEvent.eventType == KEYSTROKE && isButtonNavigationKey(theEvent.param1)) {
++                        continue;
++                    }
++
+                     // Process the main menu input
+                     mainIndex = processButtonInput(&mainMenu, NULL, &theEvent);
+ 
+@@ -759,7 +770,7 @@ boolean dialogChooseFile(char *path, const char *suffix, const char *prompt) {
+             //printf("\nFound file: %s, with date: %s", files[currentPageStart+i].path, fileDate);
+         }
+ 
+-        x = (COLS - maxPathLength) / 2;
++        x = centeredColumn(maxPathLength);
+         width = maxPathLength;
+         height = min(count - currentPageStart, FILES_ON_PAGE_MAX) + 2;
+         y = max(4, (ROWS - height) / 2);
+diff --git a/src/brogue/Rogue.h b/src/brogue/Rogue.h
+index 8a82dd2..d16e82e 100644
+--- a/src/brogue/Rogue.h
++++ b/src/brogue/Rogue.h
+@@ -1223,6 +1223,7 @@ enum tileFlags {
+ #define PAGE_UP_KEY         63276
+ #define PAGE_DOWN_KEY       63277
+ #define PRINTSCREEN_KEY     '\054'
++#define ACTION_MENU_KEY     63300
+ 
+ #define UNKNOWN_KEY         (128+19)
+ 
+@@ -1309,6 +1310,7 @@ typedef struct cellDisplayBuffer {
+ 
+ typedef struct screenDisplayBuffer {
+     cellDisplayBuffer cells[COLS][ROWS];
++    boolean mapOverlay; // an overlay covers part of the map, e.g. a dialog or a details window
+ } screenDisplayBuffer;
+ 
+ typedef struct pcell {                              // permanent cell; have to remember this stuff to save levels
+@@ -2832,6 +2834,9 @@ typedef struct buttonState {
+     short winY;
+     short winWidth;
+     short winHeight;
++
++    // Arrow keys move the focus between buttons and return chooses the focused one
++    boolean keyboardNavigation;
+ } buttonState;
+ 
+ enum messageFlags {
+@@ -2858,6 +2863,7 @@ extern boolean serverMode;
+ extern boolean nonInteractivePlayback;
+ extern boolean hasGraphics;
+ extern enum graphicsModes graphicsMode;
++extern boolean compactView; // the platform shows only the columns right of the sidebar
+ 
+ #if defined __cplusplus
+ extern "C" {
+@@ -3521,6 +3527,9 @@ extern "C" {
+                                short winWidth,
+                                short winHeight);
+     short processButtonInput(buttonState *state, boolean *canceled, rogueEvent *event);
++    boolean isButtonNavigationKey(signed long key);
++    short visibleColumns(void);
++    short centeredColumn(short width);
+     short smoothHiliteGradient(const short currentXValue, const short maxXValue);
+     void drawButton(brogueButton *button, enum buttonDrawStates highlight, screenDisplayBuffer* dbuf);
+     short buttonInputLoop(brogueButton *buttons,
+diff --git a/src/platform/main.c b/src/platform/main.c
+index b50a40e..45cc99e 100644
+--- a/src/platform/main.c
++++ b/src/platform/main.c
+@@ -14,6 +14,7 @@ boolean serverMode = false;
+ boolean nonInteractivePlayback = false;
+ boolean hasGraphics = false;
+ enum graphicsModes graphicsMode = TEXT_GRAPHICS;
++boolean compactView = false;
+ boolean isCsvFormat = false;
+ 
+ static void printCommandlineHelp() {
+@@ -35,6 +36,7 @@ static void printCommandlineHelp() {
+     "--hybrid       -H          enable hybrid graphics\n"
+     "--full-screen  -F          enable full screen\n"
+     "--no-gpu                   disable hardware-accelerated graphics and HiDPI\n"
++    "--compact                  hide the sidebar for larger cells on small screens\n"
+ #endif
+ #ifdef BROGUE_CURSES
+     "--term         -t          run in ncurses-based terminal mode\n"
+@@ -280,6 +282,11 @@ int main(int argc, char *argv[])
+             softwareRendering = true;
+             continue;
+         }
++
++        if (strcmp(argv[i], "--compact") == 0) {
++            compactView = true;
++            continue;
++        }
+ #endif
+ 
+ #ifdef BROGUE_CURSES
+diff --git a/src/platform/sdl2-platform.c b/src/platform/sdl2-platform.c
+index 7181e12..4617d8f 100644
+--- a/src/platform/sdl2-platform.c
++++ b/src/platform/sdl2-platform.c
+@@ -3,13 +3,25 @@
+ #endif
+ 
+ #include <limits.h>
++#include <math.h>
+ #include <SDL_image.h>
+ #include "platform.h"
++#include "GlobalsBase.h"
+ #include "tiles.h"
+ 
+ #define PAUSE_BETWEEN_EVENT_POLLING     36L//17
+ #define MAX_REMAPS  128
+ 
++#define PAD_STICK_DEADZONE      14000
++#define PAD_TRIGGER_THRESHOLD   16000
++#define PAD_REPEAT_DELAY        300     // ms before a held direction repeats
++#define PAD_REPEAT_INTERVAL     110
++#define PAD_SEARCH_HOLD         400     // ms of holding Y that searches instead of resting
++#define POINTER_SLOW_INTERVAL   180     // ms per pointer step at the deadzone
++#define POINTER_FAST_INTERVAL   35      // ms per pointer step at full deflection
++#define PANEL_HEALTH_PERCENT    50      // the sidebar panel shows itself below this health
++#define EVENT_QUEUE_SIZE        8
++
+ struct keypair {
+     char from;
+     char to;
+@@ -21,6 +33,24 @@ static enum graphicsModes showGraphics = TEXT_GRAPHICS;
+ 
+ static rogueEvent lastEvent;
+ 
++static struct {
++    Sint16 axis[SDL_CONTROLLER_AXIS_MAX];
++    boolean dpad[4];                // up, down, left, right
++    int heldDx, heldDy;             // direction that repeats while held
++    Uint32 nextRepeat;
++    boolean yHeld, ySearched;
++    Uint32 yPressTime;
++    boolean l1Held;
++    boolean pointerActive;          // the right stick moved the pointer since the last other input
++    int pointerX, pointerY;         // screen cell of the pointer
++    int pointerDx, pointerDy;
++    Uint32 nextPointerStep;
++    int panelSide;                  // side of the sidebar panel last time it was placed
++} pad = { .panelSide = 1 };
++
++static rogueEvent eventQueue[EVENT_QUEUE_SIZE];
++static int queueHead = 0, queueCount = 0;
++
+ 
+ static void sdlfatal(char *file, int line) {
+     fprintf(stderr, "Fatal SDL error (%s:%d): %s\n", file, line, SDL_GetError());
+@@ -138,18 +168,263 @@ static char applyRemaps(char c) {
+ }
+ 
+ 
++static void queueEvent(enum eventTypes type, signed long param1, signed long param2) {
++    if (queueCount == EVENT_QUEUE_SIZE) return;
++    rogueEvent *event = &eventQueue[(queueHead + queueCount++) % EVENT_QUEUE_SIZE];
++    *event = (rogueEvent){ .eventType = type, .param1 = param1, .param2 = param2 };
++}
++
++
++static boolean dequeueEvent(rogueEvent *event) {
++    if (queueCount == 0) return false;
++    *event = eventQueue[queueHead];
++    queueHead = (queueHead + 1) % EVENT_QUEUE_SIZE;
++    queueCount--;
++    return true;
++}
++
++
++static boolean inGame(void) {
++    return rogue.gameInProgress && !rogue.gameHasEnded;
++}
++
++
++// Menus, dialogs and text entry get only arrows, return and escape from the pad.
++static boolean menuContext(boolean textInput) {
++    return textInput || !inGame();
++}
++
++
++static int screenColumns(void) {
++    return compactView ? VIEW_COLS : COLS;
++}
++
++
++static void pointerToGrid(short *gx, short *gy) {
++    if (compactView) {
++        screenCellToGrid(pad.pointerX, pad.pointerY, gx, gy);
++    } else {
++        *gx = pad.pointerX;
++        *gy = pad.pointerY;
++    }
++}
++
++
++static void queuePointerEvent(enum eventTypes type) {
++    short gx, gy;
++    pointerToGrid(&gx, &gy);
++    queueEvent(type, gx, gy);
++}
++
++
++// Any pad input other than A and L1 hands control back from the pointer to the keys.
++static void padKey(signed long key) {
++    pad.pointerActive = false;
++    if (key) queueEvent(KEYSTROKE, key, 0);
++}
++
++
++/// Splits a stick position into one of 8 directions, or 4 if `cardinal`. Returns the deflection
++/// beyond the deadzone (0 .. 1), or 0 inside it.
++static double stickDirection(Sint16 x, Sint16 y, boolean cardinal, int *dx, int *dy) {
++    static const int sectorDx[8] = {1, 1, 0, -1, -1, -1, 0, 1};
++    static const int sectorDy[8] = {0, 1, 1, 1, 0, -1, -1, -1};
++    const double magnitude = sqrt((double)x * x + (double)y * y);
++
++    *dx = *dy = 0;
++    if (magnitude < PAD_STICK_DEADZONE) return 0;
++    if (cardinal) {
++        if (abs(x) > abs(y)) *dx = (x > 0 ? 1 : -1);
++        else *dy = (y > 0 ? 1 : -1);
++    } else {
++        const int sector = (int)lround(atan2(y, x) / (3.14159265358979323846 / 4)) & 7;
++        *dx = sectorDx[sector];
++        *dy = sectorDy[sector];
++    }
++    return min(1.0, (magnitude - PAD_STICK_DEADZONE) / (32767 - PAD_STICK_DEADZONE));
++}
++
++
++static signed long directionKey(int dx, int dy, boolean menu) {
++    if (dx && dy) {
++        if (menu) return 0;
++        return dy < 0 ? (dx < 0 ? NUMPAD_7 : NUMPAD_9) : (dx < 0 ? NUMPAD_1 : NUMPAD_3);
++    }
++    if (dy < 0) return UP_ARROW;
++    if (dy > 0) return DOWN_ARROW;
++    if (dx < 0) return LEFT_ARROW;
++    if (dx > 0) return RIGHT_ARROW;
++    return 0;
++}
++
++
++static void padButton(SDL_GameControllerButton button, boolean down, boolean menu) {
++    switch (button) {
++        case SDL_CONTROLLER_BUTTON_DPAD_UP:    pad.dpad[0] = down; return;
++        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:  pad.dpad[1] = down; return;
++        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:  pad.dpad[2] = down; return;
++        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: pad.dpad[3] = down; return;
++        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: pad.l1Held = down; return;
++        default: break;
++    }
++
++    if (button == SDL_CONTROLLER_BUTTON_Y) {
++        if (down) {
++            pad.yHeld = true;
++            pad.ySearched = false;
++            pad.yPressTime = SDL_GetTicks();
++        } else if (pad.yHeld) {
++            pad.yHeld = false;
++            if (!pad.ySearched && !menu) padKey(REST_KEY);
++        }
++        return;
++    }
++
++    if (!down) return;
++
++    switch (button) {
++        case SDL_CONTROLLER_BUTTON_A:
++            if (pad.pointerActive) {
++                queuePointerEvent(MOUSE_DOWN);
++                queuePointerEvent(MOUSE_UP);
++            } else {
++                padKey(RETURN_KEY);
++            }
++            break;
++        case SDL_CONTROLLER_BUTTON_B:             padKey(ESCAPE_KEY); break;
++        case SDL_CONTROLLER_BUTTON_X:             padKey(menu ? 0 : EXPLORE_KEY); break;
++        case SDL_CONTROLLER_BUTTON_START:         padKey(menu ? ESCAPE_KEY : INVENTORY_KEY); break;
++        case SDL_CONTROLLER_BUTTON_BACK:          padKey(menu ? ESCAPE_KEY : ACTION_MENU_KEY); break;
++        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: padKey(menu ? 0 : TAB_KEY); break;
++        default: break;
++    }
++}
++
++
++static void padTrigger(SDL_GameControllerAxis axis, Sint16 value, boolean menu) {
++    const boolean wasDown = pad.axis[axis] >= PAD_TRIGGER_THRESHOLD;
++    pad.axis[axis] = value;
++    if (wasDown || value < PAD_TRIGGER_THRESHOLD) return;
++    if (axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT) padKey(menu ? 0 : ASCEND_KEY);
++    else padKey(menu ? 0 : DESCEND_KEY);
++}
++
++
++/// Turns held directions, the held Y button and the right stick into events.
++/// Held directions repeat only when `repeat` is set, so that they do not interrupt travel and animations.
++static void padUpdate(boolean menu, boolean repeat) {
++    const Uint32 now = SDL_GetTicks();
++    int dx, dy;
++
++    if (pad.yHeld && !pad.ySearched && SDL_TICKS_PASSED(now, pad.yPressTime + PAD_SEARCH_HOLD)) {
++        pad.ySearched = true;
++        if (!menu) padKey(SEARCH_KEY);
++    }
++
++    dx = pad.dpad[3] - pad.dpad[2];
++    dy = pad.dpad[1] - pad.dpad[0];
++    if (!dx && !dy) {
++        stickDirection(pad.axis[SDL_CONTROLLER_AXIS_LEFTX], pad.axis[SDL_CONTROLLER_AXIS_LEFTY], menu, &dx, &dy);
++    }
++    if (dx != pad.heldDx || dy != pad.heldDy) {
++        pad.heldDx = dx;
++        pad.heldDy = dy;
++        if (dx || dy) {
++            padKey(directionKey(dx, dy, menu));
++            pad.nextRepeat = now + PAD_REPEAT_DELAY;
++        }
++    } else if ((dx || dy) && repeat && SDL_TICKS_PASSED(now, pad.nextRepeat)) {
++        padKey(directionKey(dx, dy, menu));
++        pad.nextRepeat = now + PAD_REPEAT_INTERVAL;
++    }
++
++    const double deflection = stickDirection(pad.axis[SDL_CONTROLLER_AXIS_RIGHTX], pad.axis[SDL_CONTROLLER_AXIS_RIGHTY],
++                                             false, &dx, &dy);
++    if (!dx && !dy) {
++        pad.pointerDx = pad.pointerDy = 0;
++        return;
++    }
++    if (!pad.pointerActive) {
++        int sx = screenColumns() / 2, sy = ROWS / 2;
++        if (inGame()) {
++            const int px = mapToWindowX(player.loc.x), py = mapToWindowY(player.loc.y);
++            int tx, ty;
++            if (!compactView) {
++                sx = px;
++                sy = py;
++            } else if (gridToScreenCell(px, py, &tx, &ty)) {
++                sx = tx;
++                sy = ty;
++            }
++        }
++        pad.pointerActive = true;
++        pad.pointerX = sx;
++        pad.pointerY = sy;
++        pad.pointerDx = dx;
++        pad.pointerDy = dy;
++        pad.nextPointerStep = now + POINTER_SLOW_INTERVAL;
++        queuePointerEvent(MOUSE_ENTERED_CELL);
++        return;
++    }
++    if (dx != pad.pointerDx || dy != pad.pointerDy || SDL_TICKS_PASSED(now, pad.nextPointerStep)) {
++        pad.pointerDx = dx;
++        pad.pointerDy = dy;
++        pad.pointerX = max(0, min(screenColumns() - 1, pad.pointerX + dx));
++        pad.pointerY = max(0, min(ROWS - 1, pad.pointerY + dy));
++        pad.nextPointerStep = now + POINTER_SLOW_INTERVAL - (Uint32)((POINTER_SLOW_INTERVAL - POINTER_FAST_INTERVAL) * deflection);
++        queuePointerEvent(MOUSE_ENTERED_CELL);
++    }
++}
++
++
++/// Places the sidebar panel, the pointer and the health bar of the compact view.
++/// The panel covers the map on the side away from the player, while L1 is held or health is low,
++/// and stays away from dialogs and from the keyboard cursor unless L1 is held.
++static void updateView(void) {
++    if (!compactView) return;
++
++    int side = 0, health = -1;
++    if (inGame()) {
++        health = player.currentHP * 100 / max(1, player.info.maxHP);
++        if (player.loc.x >= DCOLS / 2 + 5) pad.panelSide = -1;
++        else if (player.loc.x <= DCOLS / 2 - 5) pad.panelSide = 1;
++
++        boolean show = pad.l1Held;
++        if (!show && health < PANEL_HEALTH_PERCENT && !displayBuffer.mapOverlay) {
++            show = true;
++            if (isPosInMap(rogue.cursorLoc)) {
++                const int cursorColumn = mapToWindowX(rogue.cursorLoc.x) - VIEW_FIRST_COL;
++                const int panelLeft = (pad.panelSide < 0 ? 0 : VIEW_COLS - PANEL_COLS);
++                show = cursorColumn < panelLeft || cursorColumn >= panelLeft + PANEL_COLS;
++            }
++        }
++        if (show) side = pad.panelSide;
++    }
++    setViewOverlay(side, pad.pointerActive ? pad.pointerX : -1, pad.pointerActive ? pad.pointerY : -1, health);
++}
++
++
++static void refreshView(void) {
++    updateView();
++    updateScreen();
++}
++
++
+ /*
+ If an event is available, returns true and updates returnEvent. Otherwise
+ it returns false and an error event. This function also processes
+ platform-specific inputs/behaviours.
+ */
+-static boolean pollBrogueEvent(rogueEvent *returnEvent, boolean textInput) {
++static boolean pollBrogueEvent(rogueEvent *returnEvent, boolean textInput, boolean waiting) {
+     static int mx = 0, my = 0;
++    const boolean menu = menuContext(textInput);
+ 
+     returnEvent->eventType = EVENT_ERROR;
+     returnEvent->shiftKey = _modifierHeld(0);
+     returnEvent->controlKey = _modifierHeld(1);
+ 
++    if (dequeueEvent(returnEvent)) return true;
++
+     SDL_Event event;
+     boolean ret = false;
+ 
+@@ -161,6 +436,21 @@ static boolean pollBrogueEvent(rogueEvent *returnEvent, boolean textInput) {
+             SDL_Quit();
+             int statusCode = quitImmediately();
+             exit(statusCode);
++        } else if (event.type == SDL_CONTROLLERDEVICEADDED) {
++            SDL_GameControllerOpen(event.cdevice.which);
++        } else if (event.type == SDL_CONTROLLERDEVICEREMOVED) {
++            SDL_GameController *controller = SDL_GameControllerFromInstanceID(event.cdevice.which);
++            if (controller) SDL_GameControllerClose(controller);
++        } else if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
++            padButton(event.cbutton.button, event.type == SDL_CONTROLLERBUTTONDOWN, menu);
++            if (dequeueEvent(returnEvent)) return true;
++        } else if (event.type == SDL_CONTROLLERAXISMOTION) {
++            if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT || event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
++                padTrigger(event.caxis.axis, event.caxis.value, menu);
++                if (dequeueEvent(returnEvent)) return true;
++            } else {
++                pad.axis[event.caxis.axis] = event.caxis.value;
++            }
+         } else if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+             resizeWindow(event.window.data1, event.window.data2);
+         } else if (event.type == SDL_KEYDOWN) {
+@@ -219,15 +509,17 @@ static boolean pollBrogueEvent(rogueEvent *returnEvent, boolean textInput) {
+                 } else if (event.type == SDL_MOUSEBUTTONUP && event.button.button == SDL_BUTTON_RIGHT) {
+                     returnEvent->eventType = RIGHT_MOUSE_UP;
+                 }
+-                returnEvent->param1 = event.button.x * COLS / windowWidth;
+-                returnEvent->param2 = event.button.y * ROWS / windowHeight;
++                short gx, gy;
++                windowToGrid(event.button.x, event.button.y, &gx, &gy);
++                returnEvent->param1 = gx;
++                returnEvent->param2 = gy;
+                 return true;
+             }
+         } else if (event.type == SDL_MOUSEMOTION) {
+             // We don't want to return on a mouse motion event, because only the last
+             // in the queue is important. That's why we just set ret=true
+-            int xcell = event.motion.x * COLS / windowWidth,
+-                ycell = event.motion.y * ROWS / windowHeight;
++            short xcell, ycell;
++            windowToGrid(event.motion.x, event.motion.y, &xcell, &ycell);
+             if (xcell != mx || ycell != my) {
+                 returnEvent->eventType = MOUSE_ENTERED_CELL;
+                 returnEvent->param1 = xcell;
+@@ -239,7 +531,10 @@ static boolean pollBrogueEvent(rogueEvent *returnEvent, boolean textInput) {
+         }
+     }
+ 
+-    return ret;
++    if (ret) return true;
++
++    padUpdate(menu, waiting);
++    return dequeueEvent(returnEvent);
+ }
+ 
+ 
+@@ -265,7 +560,9 @@ static void _gameLoop() {
+     free(path);
+ #endif
+ 
+-    if (SDL_Init(SDL_INIT_VIDEO) < 0) sdlfatal(__FILE__, __LINE__);
++    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
++    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) < 0) sdlfatal(__FILE__, __LINE__);
++    if (compactView) SDL_ShowCursor(SDL_DISABLE);
+ 
+     if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) imgfatal(__FILE__, __LINE__);
+ 
+@@ -298,7 +595,7 @@ static void _delayUpTo(short ms) {
+ }
+ 
+ static boolean _pauseForMilliseconds(short ms, PauseBehavior behavior) {
+-    updateScreen();
++    refreshView();
+     _delayUpTo(ms);
+ 
+     if (lastEvent.eventType != EVENT_ERROR
+@@ -306,14 +603,14 @@ static boolean _pauseForMilliseconds(short ms, PauseBehavior behavior) {
+         return true; // SDL already gave us an interrupting event to process
+     }
+ 
+-    return pollBrogueEvent(&lastEvent, false) // ask SDL for a new event if one is available
++    return pollBrogueEvent(&lastEvent, false, false) // ask SDL for a new event if one is available
+         && lastEvent.eventType != EVENT_ERROR // and check if it is interrupting
+         && (lastEvent.eventType != MOUSE_ENTERED_CELL || behavior.interuptForMouseMove);
+ }
+ 
+ 
+ static void _nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInput, boolean colorsDance) {
+-    updateScreen();
++    refreshView();
+ 
+     if (lastEvent.eventType != EVENT_ERROR) {
+         *returnEvent = lastEvent;
+@@ -327,9 +624,9 @@ static void _nextKeyOrMouseEvent(rogueEvent *returnEvent, boolean textInput, boo
+             commitDraws();
+         }
+ 
+-        updateScreen();
++        refreshView();
+ 
+-        if (pollBrogueEvent(returnEvent, textInput)) break;
++        if (pollBrogueEvent(returnEvent, textInput, true)) break;
+ 
+         _delayUpTo(PAUSE_BETWEEN_EVENT_POLLING);
+     }
+diff --git a/src/platform/tiles.c b/src/platform/tiles.c
+index 9631207..79d780c 100644
+--- a/src/platform/tiles.c
++++ b/src/platform/tiles.c
+@@ -63,6 +63,12 @@ int windowHeight = -1;              // the SDL window's height (in "screen units
+ boolean fullScreen = false;         // true if the window should be full-screen, else false
+ boolean softwareRendering = false;  // true if hardware acceleration is disabled (by choice or by force)
+ 
++static boolean screenDirty = true;  // the screen differs from the last presented frame
++static int panelSide = 0;           // sidebar panel: 0 hidden, -1 over the left of the map, 1 over the right
++static int pointerX = -1, pointerY = -1; // outlined screen cell in the compact view, or -1
++static int healthPercent = -1;      // health bar fill in the compact view, or -1 for no bar
++static int compactCellWidth = 1, compactCellHeight = 1;
++
+ 
+ /// Prints the fatal error message provided by SDL then closes the app.
+ static void sdlfatal(char *file, int line) {
+@@ -534,7 +540,10 @@ static void createTextures(SDL_Renderer *renderer, int outputWidth, int outputHe
+     }
+ 
+     // choose the number of textures
+-    if (baseTileWidth >= MAX_TILE_SIZE || baseTileHeight >= MAX_TILE_SIZE) {
++    if (compactView) {
++        numTextures = 1; // every cell has the same size
++        SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
++    } else if (baseTileWidth >= MAX_TILE_SIZE || baseTileHeight >= MAX_TILE_SIZE) {
+         numTextures = 1;
+         SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+     } else {
+@@ -601,6 +610,125 @@ void updateTile(int row, int column, short charIndex,
+         .charIndex = charIndex,
+         .needsRefresh = 1
+     };
++    screenDirty = true;
++}
++
++
++void setViewOverlay(int newPanelSide, int newPointerX, int newPointerY, int newHealthPercent) {
++    if (newPanelSide != panelSide || newPointerX != pointerX || newPointerY != pointerY
++        || newHealthPercent != healthPercent) {
++        panelSide = newPanelSide;
++        pointerX = newPointerX;
++        pointerY = newPointerY;
++        healthPercent = newHealthPercent;
++        screenDirty = true;
++    }
++}
++
++
++static int panelLeftColumn(void) {
++    return panelSide < 0 ? 0 : VIEW_COLS - PANEL_COLS;
++}
++
++
++/// Maps a cell of the compact view to the grid cell drawn there.
++void screenCellToGrid(int sx, int sy, short *gx, short *gy) {
++    const int left = panelLeftColumn();
++    if (panelSide && sx >= left && sx < left + PANEL_COLS && sy >= PANEL_TOP && sy < PANEL_TOP + PANEL_ROWS) {
++        *gx = sx - left;
++        *gy = sy - PANEL_TOP;
++    } else {
++        *gx = sx + VIEW_FIRST_COL;
++        *gy = sy;
++    }
++}
++
++
++/// Finds the cell of the compact view that shows a grid cell. Returns false if it is not visible.
++boolean gridToScreenCell(int gx, int gy, int *sx, int *sy) {
++    *sx = gx - VIEW_FIRST_COL;
++    *sy = gy;
++    if (*sx < 0 || *sx >= VIEW_COLS || gy < 0 || gy >= ROWS) return false;
++    short cx, cy;
++    screenCellToGrid(*sx, *sy, &cx, &cy);
++    return cx == gx && cy == gy;
++}
++
++
++/// Maps a window position (in screen units) to a grid cell.
++void windowToGrid(int x, int y, short *gx, short *gy) {
++    if (!compactView) {
++        *gx = x * COLS / windowWidth;
++        *gy = y * ROWS / windowHeight;
++        return;
++    }
++    int outputWidth = windowWidth, outputHeight = windowHeight;
++    SDL_Renderer *renderer = Win ? SDL_GetRenderer(Win) : NULL;
++    if (renderer) SDL_GetRendererOutputSize(renderer, &outputWidth, &outputHeight);
++    const int px = x * outputWidth / max(1, windowWidth), py = y * outputHeight / max(1, windowHeight);
++    screenCellToGrid(min(VIEW_COLS - 1, px / compactCellWidth), min(ROWS - 1, py / compactCellHeight), gx, gy);
++}
++
++
++static void drawCompactView(SDL_Renderer *renderer, int outputWidth, int outputHeight) {
++    const int cw = compactCellWidth, ch = compactCellHeight;
++
++    for (int step = -1; step < 1; step++) {
++        for (int sx = 0; sx < VIEW_COLS; sx++) {
++            for (int sy = 0; sy < ROWS; sy++) {
++                short gx, gy;
++                screenCellToGrid(sx, sy, &gx, &gy);
++                const ScreenTile *tile = &screenTiles[gy][gx];
++                const SDL_Rect dest = { sx * cw, sy * ch, cw, ch };
++
++                if (step < 0) {
++                    if (tile->backRed == 0 && tile->backGreen == 0 && tile->backBlue == 0) continue;
++                    if (SDL_SetRenderDrawColor(renderer,
++                        round(2.55 * tile->backRed),
++                        round(2.55 * tile->backGreen),
++                        round(2.55 * tile->backBlue), 255) < 0) sdlfatal(__FILE__, __LINE__);
++                    if (SDL_RenderFillRect(renderer, &dest) < 0) sdlfatal(__FILE__, __LINE__);
++                } else {
++                    const int tileRow = tile->charIndex / 16, tileColumn = tile->charIndex % 16;
++                    if (tileEmpty[tileRow][tileColumn] && !(tileRow == 21 && tileColumn == 1)) continue;
++                    const SDL_Rect src = { baseTileWidth * tileColumn, baseTileHeight * tileRow, baseTileWidth, baseTileHeight };
++                    if (SDL_SetTextureColorMod(Textures[0],
++                        round(2.55 * tile->foreRed),
++                        round(2.55 * tile->foreGreen),
++                        round(2.55 * tile->foreBlue)) < 0) sdlfatal(__FILE__, __LINE__);
++                    if (SDL_RenderCopy(renderer, Textures[0], &src, &dest) < 0) sdlfatal(__FILE__, __LINE__);
++                }
++            }
++        }
++    }
++
++    if (panelSide) {
++        const int edge = (panelSide < 0 ? PANEL_COLS * cw : panelLeftColumn() * cw - 1);
++        if (SDL_SetRenderDrawColor(renderer, 90, 90, 110, 255) < 0) sdlfatal(__FILE__, __LINE__);
++        if (SDL_RenderDrawLine(renderer, edge, PANEL_TOP * ch, edge, (PANEL_TOP + PANEL_ROWS) * ch - 1) < 0) sdlfatal(__FILE__, __LINE__);
++    }
++
++    if (pointerX >= 0 && pointerY >= 0) {
++        const SDL_Rect outline = { pointerX * cw, pointerY * ch, cw, ch };
++        if (SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255) < 0) sdlfatal(__FILE__, __LINE__);
++        if (SDL_RenderDrawRect(renderer, &outline) < 0) sdlfatal(__FILE__, __LINE__);
++    }
++
++    const int barTop = ROWS * ch + 1, barHeight = outputHeight - barTop;
++    if (healthPercent >= 0 && barHeight > 0) {
++        const SDL_Rect track = { 0, barTop, outputWidth, barHeight };
++        const SDL_Rect fill = { 0, barTop, outputWidth * min(100, healthPercent) / 100, barHeight };
++        if (SDL_SetRenderDrawColor(renderer, 40, 40, 50, 255) < 0) sdlfatal(__FILE__, __LINE__);
++        if (SDL_RenderFillRect(renderer, &track) < 0) sdlfatal(__FILE__, __LINE__);
++        if (healthPercent > 50) {
++            SDL_SetRenderDrawColor(renderer, 70, 90, 220, 255);
++        } else if (healthPercent > 25) {
++            SDL_SetRenderDrawColor(renderer, 230, 160, 40, 255);
++        } else {
++            SDL_SetRenderDrawColor(renderer, 230, 40, 40, 255);
++        }
++        if (fill.w > 0 && SDL_RenderFillRect(renderer, &fill) < 0) sdlfatal(__FILE__, __LINE__);
++    }
+ }
+ 
+ 
+@@ -638,7 +766,19 @@ void updateScreen() {
+     if (SDL_GetRendererOutputSize(renderer, &outputWidth, &outputHeight) < 0) sdlfatal(__FILE__, __LINE__);
+     if (outputWidth == 0 || outputHeight == 0) return;
+ 
+-    createTextures(renderer, outputWidth, outputHeight);
++    if (compactView) {
++        compactCellWidth = max(1, outputWidth / VIEW_COLS);
++        compactCellHeight = max(1, outputHeight / ROWS);
++        const int oldWidth = baseTileWidth, oldHeight = baseTileHeight;
++        createTextures(renderer, compactCellWidth * COLS, compactCellHeight * ROWS);
++        if (baseTileWidth != oldWidth || baseTileHeight != oldHeight) screenDirty = true;
++    } else {
++        createTextures(renderer, outputWidth, outputHeight);
++    }
++
++    // nothing changed since the last frame, which is still on screen
++    if (!screenDirty && !softwareRendering) return;
++    screenDirty = false;
+ 
+     if (!softwareRendering) {
+         // black out the frame (double-buffering invalidated it)
+@@ -646,6 +786,12 @@ void updateScreen() {
+         if (SDL_RenderClear(renderer) < 0) sdlfatal(__FILE__, __LINE__);
+     }
+ 
++    if (compactView && !softwareRendering) {
++        drawCompactView(renderer, outputWidth, outputHeight);
++        SDL_RenderPresent(renderer);
++        return;
++    }
++
+     // To please the OpenGL renderer, we'll proceed in 5 steps:
+     //  -1. background colors
+     //  0.  Textures[0]
+@@ -787,6 +933,7 @@ void resizeWindow(int width, int height) {
+     }
+ 
+     SDL_GetWindowSize(Win, &windowWidth, &windowHeight);
++    screenDirty = true;
+     refreshScreen();
+     updateScreen();
+ }
+diff --git a/src/platform/tiles.h b/src/platform/tiles.h
+index 21296ac..43dec72 100644
+--- a/src/platform/tiles.h
++++ b/src/platform/tiles.h
+@@ -11,4 +11,17 @@ void updateTile(int row, int column, short charIndex,
+ void updateScreen(void);
+ SDL_Surface *captureScreen(void);
+ 
++// Compact view: the grid without the sidebar columns, at whole-pixel cells. The sidebar can be shown
++// as a panel over the map, a pointer cell outlined and a health bar drawn below the grid.
++#define VIEW_FIRST_COL  STAT_BAR_WIDTH
++#define VIEW_COLS       (COLS - VIEW_FIRST_COL)
++#define PANEL_COLS      STAT_BAR_WIDTH
++#define PANEL_ROWS      DROWS
++#define PANEL_TOP       MESSAGE_LINES
++
++void setViewOverlay(int panelSide, int pointerX, int pointerY, int healthPercent);
++void screenCellToGrid(int sx, int sy, short *gx, short *gy);
++boolean gridToScreenCell(int gx, int gy, int *sx, int *sy);
++void windowToGrid(int x, int y, short *gx, short *gy);
++
+ #endif

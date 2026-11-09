@@ -1,0 +1,6 @@
+- The screen shows the map, the messages and the bottom buttons. The sidebar (health, status, monsters in view) appears as a panel over the side of the map away from you while L1 is held, and by itself when health drops below half. The bar under the screen is your health.
+- Inventory: Start, then up and down go through the items with their details, left and right pick an action, A runs it.
+- The right stick moves a pointer that works like the mouse: it describes monsters, items and terrain, and A travels to it or presses the button under it.
+- In menus and dialogs, Start and Select close them like B.
+- In yes or no questions A answers yes; left and right pick an answer first.
+- Saves, recordings and high scores are in `ports/brogue`.

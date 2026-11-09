@@ -1,0 +1,50 @@
+title: Brogue
+catalog: 22
+summary: Brogue Community Edition, the dungeon crawling roguelike, with graphical tiles and pad controls.
+tags: [roguelike, rpg, 2d]
+status: playable
+review: draft
+accent: violet
+added: 2026-11-05
+icon: icon.png
+
+engine:
+  name: Brogue CE
+  url: https://github.com/tmewett/BrogueCE
+  commit: 1ba4240b7a928ddf0ffb772717bf1d433cd63804
+  license: AGPL-3.0
+
+data:
+  kind: included
+  license: CC BY-SA 4.0
+  credit: Brogue CE maintainers, Antony Boucher, Oryx Design Lab
+  license_file: ports/brogue/assets/LICENSE.txt
+
+controls:
+  - { button: L-stick, action: "Move in 8 directions; menu navigation" }
+  - { button: dpad, action: "Move; menu navigation" }
+  - { button: A, action: "Confirm, travel to the cursor; click at the pointer" }
+  - { button: B, action: "Cancel, close" }
+  - { button: X, action: "Explore: the first press shows where, the second goes" }
+  - { button: Y, action: "Rest one turn; hold to search" }
+  - { button: R-stick, action: "Pointer: describe what is under it" }
+  - { button: L1, action: "Show the sidebar while held" }
+  - { button: R1, action: "Next target" }
+  - { button: L2, action: "Travel to the up stairs" }
+  - { button: R2, action: "Travel to the down stairs" }
+  - { button: START, action: "Inventory" }
+  - { button: SELECT, action: "Menu: save, help, discoveries, options" }
+
+shots:
+  - { file: shots/title.png, caption: "Title screen" }
+  - { file: shots/play.png, caption: "Depth 1 with the sidebar shown by L1" }
+
+licenses:
+  - ports/brogue/LICENSE.txt
+  - ports/brogue/assets/LICENSE.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-09
+    changes:
+      - First release.
