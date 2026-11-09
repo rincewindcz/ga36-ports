@@ -46,3 +46,6 @@ releases:
     date: 2026-11-09
     changes:
       - First release.
+    file: neverball-2026.11.1.zip
+    size: 72718312
+    sha256: e04ca8e474895a500894083f4afc52c4e218f492289f461704fe66c29137a669
