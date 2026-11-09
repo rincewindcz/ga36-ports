@@ -1,0 +1,49 @@
+title: Test Drive II (Enhanced)
+catalog: 24
+summary: "Accolade's 1989 The Duel: Test Drive II, enhanced by Kylofon."
+tags: [racing, retro]
+status: playable
+review: draft
+accent: rose
+added: 2026-11-09
+icon: icon.png
+
+engine:
+  name: Test Drive II Enhanced
+  url: https://github.com/kylofon/testdrive2-enhanced
+  commit: 3467613011b9aceaaa3355c8128e049ca76c729b
+  license: MIT
+
+data:
+  kind: user
+  sources:
+    - name: The Duel - Test Drive II (1989, DOS)
+      note: The files of the original PC release (EGA). The Collection with the car and scenery disks is supported by the engine.
+  files:
+    - { from: "TD2EGA.EXE", to: ports/testdrive2/data/ }
+    - { from: "*.PES, *.BIN, *.SS, *.DAT, *.SGN, *.FNT", to: ports/testdrive2/data/ }
+
+controls:
+  - { button: dpad, action: "Steer, up accelerates, down brakes; moves in menus" }
+  - { button: L-stick, action: "Steer; moves in menus" }
+  - { button: A, action: "Accelerate; confirm" }
+  - { button: B, action: "Brake; erase a letter" }
+  - { button: R1, action: "Shift up" }
+  - { button: X, action: "Shift up" }
+  - { button: L1, action: "Shift down" }
+  - { button: Y, action: "Shift down" }
+  - { button: START, action: "Pause; confirm" }
+  - { button: SELECT, action: "Leave the drive or menu" }
+
+shots:
+  - { file: shots/menu.png, caption: "Race against the clock or the computer" }
+  - { file: shots/road.png, caption: "The desert road" }
+
+licenses:
+  - ports/testdrive2/LICENSE.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-09
+    changes:
+      - First release.

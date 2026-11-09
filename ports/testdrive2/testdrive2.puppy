@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Test Drive II
+DESCRIPTION=Accolade's 1989 driving game The Duel (Test Drive II Enhanced)
+ICON=/home/player/.local/share/icons/testdrive2.png
+COMMAND=/home/player/ports/testdrive2/run.sh
+COLOR=#ff5c8a

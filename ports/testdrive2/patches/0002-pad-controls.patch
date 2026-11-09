@@ -1,0 +1,245 @@
+diff --git a/src/game/flow.c b/src/game/flow.c
+index 662ebc7..2236b9f 100644
+--- a/src/game/flow.c
++++ b/src/game/flow.c
+@@ -415,7 +415,7 @@ int game_main(void)
+             gfx_set_text_colours(0x0F, 0);
+             draw_text_centered(0x71D3, 0x60);        /* "Exit to DOS (Y/N)?" */
+             do r = (s16)getkey_timeout(3000); while (r == KEY_ESC);
+-            if (r == 'y' || r == 'Y') {
++            if (r == 'y' || r == 'Y' || r == 0x0D) {          /* PORT: Enter, the pad has no Y key */
+                 select_save(DSS(DS_data_disk));
+                 goto shutdown;
+             }
+diff --git a/src/host.c b/src/host.c
+index 622d401..7901723 100644
+--- a/src/host.c
++++ b/src/host.c
+@@ -17,6 +17,8 @@ static SDL_Renderer *renderer;
+ static SDL_Texture *texture;
+ static SDL_AudioStream *audio;
+ static SDL_Gamepad *gamepad;
++#define PAD_MAX 4
++static SDL_Gamepad *pads[PAD_MAX];    /* PORT: every pad, for the console pad layer */
+ static char *game_dir;
+ 
+ static void (*tick_handler)(void);
+@@ -43,6 +45,7 @@ static double samples_per_tick_frac;
+ 
+ static void process_events(void);
+ static void pool_shutdown(void);
++static void pad_update(void);
+ 
+ bool host_init(const char *dir, int window_scale)
+ {
+@@ -77,7 +80,8 @@ bool host_init(const char *dir, int window_scale)
+ void host_shutdown(void)
+ {
+     pool_shutdown();
+-    if (gamepad) SDL_CloseGamepad(gamepad);
++    for (int i = 0; i < PAD_MAX; i++)
++        if (pads[i]) SDL_CloseGamepad(pads[i]);
+     if (audio) SDL_DestroyAudioStream(audio);
+     if (texture) SDL_DestroyTexture(texture);
+     SDL_free(frame);
+@@ -634,18 +638,127 @@ static void process_events(void)
+             repaint = true;
+             break;
+         case SDL_EVENT_GAMEPAD_ADDED:
+-            if (!gamepad) gamepad = SDL_OpenGamepad(ev.gdevice.which);
++            for (int i = 0; i < PAD_MAX; i++) {
++                if (pads[i]) continue;
++                pads[i] = SDL_OpenGamepad(ev.gdevice.which);
++                if (!gamepad) gamepad = pads[i];
++                break;
++            }
+             break;
+         case SDL_EVENT_GAMEPAD_REMOVED:
+-            if (gamepad && SDL_GetGamepadID(gamepad) == ev.gdevice.which) {
+-                SDL_CloseGamepad(gamepad);
+-                gamepad = NULL;
++            for (int i = 0; i < PAD_MAX; i++) {
++                if (!pads[i] || SDL_GetGamepadID(pads[i]) != ev.gdevice.which) continue;
++                if (gamepad == pads[i]) gamepad = NULL;
++                SDL_CloseGamepad(pads[i]);
++                pads[i] = NULL;
+             }
++            if (!gamepad)
++                for (int i = 0; i < PAD_MAX && !gamepad; i++) gamepad = pads[i];
+             break;
+         default:
+             break;
+         }
+     }
++    pad_update();
++}
++
++/* PORT: the console pad (host.h). SDL's mapping of this pad has A south, B east, X west, Y north. */
++enum {
++    PAD_UP = 1, PAD_DOWN = 2, PAD_RIGHT = 4, PAD_LEFT = 8, PAD_A = 16, PAD_B = 32, PAD_X = 64, PAD_Y = 128,
++    PAD_L1 = 256, PAD_R1 = 512, PAD_START = 1024, PAD_SELECT = 2048, PAD_STICK_UP = 4096, PAD_STICK_DOWN = 8192,
++};
++#define PAD_DIRS  (PAD_UP | PAD_DOWN | PAD_LEFT | PAD_RIGHT | PAD_STICK_UP | PAD_STICK_DOWN)
++#define PAD_STICK 16384
++#define PAD_DRIVE_NS        (250 * SDL_NS_PER_MS)  /* a drive reads the pad every simulation step */
++#define PAD_REPEAT_DELAY_NS (400 * SDL_NS_PER_MS)
++#define PAD_REPEAT_NS       (120 * SDL_NS_PER_MS)
++
++static unsigned pad_held;
++static Uint64 pad_drive_ns;
++
++static unsigned pad_read(void)
++{
++    unsigned p = 0;
++    for (int i = 0; i < PAD_MAX; i++) {
++        SDL_Gamepad *g = pads[i];
++        if (!g) continue;
++#define BTN(b) SDL_GetGamepadButton(g, SDL_GAMEPAD_BUTTON_##b)
++        s16 ax = SDL_GetGamepadAxis(g, SDL_GAMEPAD_AXIS_LEFTX);
++        s16 ay = SDL_GetGamepadAxis(g, SDL_GAMEPAD_AXIS_LEFTY);
++        if (BTN(DPAD_UP)) p |= PAD_UP;
++        if (BTN(DPAD_DOWN)) p |= PAD_DOWN;
++        if (ay < -PAD_STICK) p |= PAD_STICK_UP;
++        if (ay >= PAD_STICK) p |= PAD_STICK_DOWN;
++        if (BTN(DPAD_LEFT) || ax < -PAD_STICK) p |= PAD_LEFT;
++        if (BTN(DPAD_RIGHT) || ax >= PAD_STICK) p |= PAD_RIGHT;
++        if (BTN(SOUTH)) p |= PAD_A;
++        if (BTN(EAST)) p |= PAD_B;
++        if (BTN(WEST)) p |= PAD_X;
++        if (BTN(NORTH)) p |= PAD_Y;
++        if (BTN(LEFT_SHOULDER)) p |= PAD_L1;
++        if (BTN(RIGHT_SHOULDER)) p |= PAD_R1;
++        if (BTN(START)) p |= PAD_START;
++        if (BTN(BACK)) p |= PAD_SELECT;
++#undef BTN
++    }
++    return p;
++}
++
++static bool pad_driving(void) { return pad_drive_ns && SDL_GetTicksNS() - pad_drive_ns < PAD_DRIVE_NS; }
++
++/* presses the XT keys in order and releases them in reverse */
++static void pad_keys(const u8 *xt, int n)
++{
++    if (!scan_handler) return;
++    for (int i = 0; i < n; i++) scan_handler(xt[i]);
++    for (int i = n - 1; i >= 0; i--) scan_handler((u8)(xt[i] | 0x80));
++}
++
++/* A press types its key once; held directions repeat outside a drive. A change between a drive and the
++ * rest counts only new presses, so a button still held from the drive does not answer the next screen. */
++static void pad_update(void)
++{
++    static const struct { unsigned bit; u8 xt; } MENU_KEYS[] = {
++        { PAD_UP | PAD_STICK_UP, 0x48 }, { PAD_DOWN | PAD_STICK_DOWN, 0x50 }, { PAD_LEFT, 0x4B }, { PAD_RIGHT, 0x4D },
++        { PAD_A, 0x1C }, { PAD_START, 0x1C }, { PAD_B, 0x0E }, { PAD_SELECT, 0x01 },
++    };
++    static Uint64 repeat_ns;
++    static bool was_driving;
++    bool driving = pad_driving();
++    unsigned now = pad_read(), pressed = now & ~pad_held;
++    pad_held = now;
++    if (driving != was_driving) {
++        was_driving = driving;
++        return;
++    }
++    if (driving) {
++        static const u8 PAUSE[] = { 0x1D, 0x19 }, ESC[] = { 0x01 };
++        if (pressed & PAD_START) pad_keys(PAUSE, 2);
++        if (pressed & PAD_SELECT) pad_keys(ESC, 1);
++        return;
++    }
++    Uint64 t = SDL_GetTicksNS();
++    if (pressed & PAD_DIRS) repeat_ns = t + PAD_REPEAT_DELAY_NS;
++    else if ((now & PAD_DIRS) && t >= repeat_ns) {
++        pressed |= now & PAD_DIRS;
++        repeat_ns = t + PAD_REPEAT_NS;
++    }
++    for (size_t i = 0; i < SDL_arraysize(MENU_KEYS); i++)
++        if (pressed & MENU_KEYS[i].bit) pad_keys(&MENU_KEYS[i].xt, 1);
++}
++
++u16 host_pad_drive(void)
++{
++    pad_drive_ns = SDL_GetTicksNS();
++    unsigned p = pad_held;                  /* the stick only steers: a slanted stick must not lift off the throttle */
++    u16 r = 0;
++    if (p & (PAD_UP | PAD_A)) r |= 1;
++    if (p & (PAD_DOWN | PAD_B)) r |= 2;
++    if (p & PAD_RIGHT) r |= 4;
++    if (p & PAD_LEFT) r |= 8;
++    if (p & (PAD_R1 | PAD_X)) r |= HOST_PAD_SHIFT_UP;
++    else if (p & (PAD_L1 | PAD_Y)) r |= HOST_PAD_SHIFT_DOWN;
++    return r;
+ }
+ 
+ bool host_joy_read(s16 *x, s16 *y, u8 *buttons)
+diff --git a/src/host.h b/src/host.h
+index f005f35..91419c3 100644
+--- a/src/host.h
++++ b/src/host.h
+@@ -79,6 +79,15 @@ bool host_xt_key_down(u8 xt_scan);
+ /* ---- Joystick: first connected gamepad. Axes -32768..32767, buttons bit0 = A, bit1 = B. */
+ bool host_joy_read(s16 *x, s16 *y, u8 *buttons);
+ 
++/* ---- PORT: the pad of the console (every connected gamepad). Outside a drive it types keys through the
++ * scan handler: the directions are the arrows, A and START Enter, B Backspace, SELECT Esc. A drive reads
++ * it with host_pad_drive, which also tells the host that a drive is running: then START is Ctrl-P, SELECT
++ * Esc, and the rest is driving input. The result has the bits of input_drive_bits (1 up, 2 down, 4 right,
++ * 8 left) and a shift button as HOST_PAD_SHIFT_UP / HOST_PAD_SHIFT_DOWN. */
++#define HOST_PAD_SHIFT_UP   0x40
++#define HOST_PAD_SHIFT_DOWN 0x80
++u16 host_pad_drive(void);
++
+ /* ---- PC speaker: PIT channel 2 divisor and the port 61h gate (bits 0 and 1 both set = sounding).
+  * divisor 0 means 65536. Changes take effect from the current tick onward. */
+ void host_speaker(u16 divisor, bool on);
+diff --git a/src/platform/input.c b/src/platform/input.c
+index d06d1a2..0373827 100644
+--- a/src/platform/input.c
++++ b/src/platform/input.c
+@@ -8,6 +8,8 @@
+  * as the BIOS would. */
+ #include "input.h"
+ 
++#include <string.h>
++
+ #include "../codeptr.h"
+ #include "../host.h"
+ #include "../symbols.h"
+@@ -387,6 +389,13 @@ u16 input_drive_bits(void)
+     if (DSB(DS_key_down + 0x50)) r |= 0x02;    /* Down */
+     if (DSB(DS_key_down + 0x4F)) r |= 0x0A;    /* End   -> down + left */
+     if (DSB(DS_key_down + 0x4B)) r |= 0x08;    /* Left */
++    /* PORT: the console pad. A shift button is button A with Up or Down, as the joystick shifts; with the
++     * automatic gearbox (easy) it does nothing. */
++    u16 pad = host_pad_drive();
++    if ((pad & (HOST_PAD_SHIFT_UP | HOST_PAD_SHIFT_DOWN)) && DSB(DS_diff_easy) == 0)
++        r = (pad & HOST_PAD_SHIFT_UP) ? 0x11 : 0x12;
++    else
++        r |= pad & 0x0F;
+     if (r == 0) r = joy_read();
+     return r;
+ }
+@@ -502,9 +511,19 @@ s16 edit_text_line(u16 buf_ds, s16 maxlen, s16 x, s16 y, u32 timeout)
+             break;                                          /* timeout: key = 0 */
+         }
+         deadline_set(timeout);
+-        if (key == 0x0D || key == 0x1B || (u16)key == 0x4800 || (u16)key == 0x5000 || key == 0x09) break;
++        /* PORT: Up and Down pick the letter under the cursor (the pad has no letters) instead of ending the
++         * line; the only caller, the high-score name, ignores the exit key. */
++        if (key == 0x0D || key == 0x1B || key == 0x09) break;
+         s16 pos = (s16)DSW(DS_g_edit_pos);
+-        if ((u16)key == 0x4D00) {                           /* Right: may reach maxlen */
++        if ((u16)key == 0x4800 || (u16)key == 0x5000) {
++            static const char LETTERS[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.";
++            if (!(maxlen > pos)) continue;
++            edit_cursor_xor();
++            const char *at = strchr(LETTERS, toupper_c((s16)DSB((u16)(buf_ds + pos))));
++            int n = (int)sizeof LETTERS - 1, l = at ? (int)(at - LETTERS) : 0;
++            DSB((u16)(buf_ds + pos)) = (u8)LETTERS[(l + ((u16)key == 0x4800 ? 1 : n - 1)) % n];
++            gfx_draw_text(buf_ds, (u16)x, (u16)y);
++        } else if ((u16)key == 0x4D00) {                           /* Right: may reach maxlen */
+             edit_cursor_xor();
+             if (maxlen > (s16)DSW(DS_g_edit_pos)) DSW(DS_g_edit_pos)++;
+         } else if ((u16)key == 0x4B00) {                    /* Left */

@@ -1,0 +1,330 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5dac679..0c9b2b7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -12,6 +12,9 @@ file(GLOB_RECURSE TD_ENHANCED_SOURCES CONFIGURE_DEPENDS src/enhanced/*.c)
+ add_executable(testdrive2-enhanced ${TD_SOURCES})
+ target_include_directories(testdrive2-enhanced PRIVATE src)
+ target_link_libraries(testdrive2-enhanced PRIVATE SDL3::SDL3)
++if(UNIX)
++    target_link_libraries(testdrive2-enhanced PRIVATE m)
++endif()
+ 
+ if(MSVC)
+     target_compile_options(testdrive2-enhanced PRIVATE /W3)
+diff --git a/README.md b/README.md
+index b639ef6..ad66586 100644
+--- a/README.md
++++ b/README.md
+@@ -41,6 +41,7 @@ Add `-DTD2_LAUNCHER=ON` to the first command to also build `TD2 Enhanced.exe`, t
+ | `--game-dir DIR` | Folder with the original game files (default `Game`) |
+ | `--scale N` | Initial window size as a multiple of 320×240 (default 3) |
+ | `--res-scale N` | Output resolution as a multiple of 320×200 (default 4 = 1280×800, range 1–8; lower it on slower CPUs) |
++| `--supersample N` | Road samples per output pixel per axis, 1–4 (default 2, 4 at `--res-scale 1`) |
+ | `--draw-distance N` | Road units drawn ahead (default 180, range 60–240; the original draws 60) |
+ | `--show-position on\|off` | `on`: the track position in the top left corner of the road view (`off` by default, F9 toggles it) |
+ | `--valley on\|off` | `off` (default, a test): the sky continues below the cliffs beside the road, as in the original; `on`: a valley floor far below |
+diff --git a/src/enhanced/enh_raster.c b/src/enhanced/enh_raster.c
+index 4803a56..9107b0e 100644
+--- a/src/enhanced/enh_raster.c
++++ b/src/enhanced/enh_raster.c
+@@ -16,6 +16,7 @@
+ #include <string.h>
+ 
+ int enh_scale, enh_q, enh_sq;
++int enh_supersample;
+ EnhTarget enh_front = { .sc = &enh_sc, .vw = VIEW_W, .vh = VIEW_H };
+ EnhTarget enh_mirror = { .sc = &enh_mc, .vw = MIRROR_W, .vh = MIRROR_H };
+ 
+@@ -223,7 +224,7 @@ bool enh_raster_setup(void)
+     int k = gfx_output_scale();
+     if (k == enh_scale && enh_front.smp && enh_mirror.smp) return true;
+     enh_scale = k;
+-    enh_q = k == 1 ? 4 : 2;
++    enh_q = enh_supersample > 4 ? 4 : enh_supersample > 0 ? enh_supersample : k == 1 ? 4 : 2;
+     enh_sq = k * enh_q;
+     if (!target_alloc(&enh_front, k) || !target_alloc(&enh_mirror, k)) {
+         target_free(&enh_front);
+@@ -1156,6 +1157,7 @@ static void do_mark(const Band *b, const EnhCmd *c)
+ static u16 lin_of[256];                   /* sRGB byte -> linear 0..4095 */
+ static u8 srgb_of[4096];
+ static u16 pal_lin[ENH_NCOL][3];
++static u32 pal_rgb[ENH_NCOL];              /* pal_lin back in sRGB: the resolve of one sample */
+ static bool luts_ready;
+ 
+ /* ------------------------------------------------------------------------------------------------ */
+@@ -1273,6 +1275,14 @@ u32 enh_palette_key(void)
+ static void resolve_rows(const EnhTarget *T, int o0, int o1)
+ {
+     int q = enh_q;
++    if (q == 1) {
++        for (int oy = o0; oy < o1; oy++) {
++            u32 *dst = T->out + (size_t)oy * T->ow;
++            const u8 *p = T->smp + (size_t)oy * T->sw;
++            for (int ox = 0; ox < T->ow; ox++) dst[ox] = pal_rgb[p[ox]];
++        }
++        return;
++    }
+     u32 n = (u32)(q * q), half = n / 2;
+     for (int oy = o0; oy < o1; oy++) {
+         u32 *dst = T->out + (size_t)oy * T->ow;
+@@ -1316,6 +1326,8 @@ static void prepare_palette(EnhTarget *t)
+             pal_lin[i][ch] = (u16)(v < 0 ? 0 : v > 4095 ? 4095 : v + 0.5f);
+         }
+     }
++    for (int i = 0; i < ENH_NCOL; i++)
++        pal_rgb[i] = (u32)srgb_of[pal_lin[i][0]] << 16 | (u32)srgb_of[pal_lin[i][1]] << 8 | srgb_of[pal_lin[i][2]];
+     t->pal_key = enh_palette_key();
+ }
+ 
+diff --git a/src/enhanced/enhanced.c b/src/enhanced/enhanced.c
+index b6ac43e..acb5e53 100644
+--- a/src/enhanced/enhanced.c
++++ b/src/enhanced/enhanced.c
+@@ -768,45 +768,56 @@ void enh_draw_text(u32 *px, int k, int row, const char *txt)
+     }
+ }
+ 
+-static void ov_draw(u32 *px, int k)
++#define OV_BANDS 4
++
++static u32 *ov_px;
++
++/* one band of view rows: the enhanced pixels go wherever the original drew nothing after the road, copied
++ * in runs that stay inside the front view or the mirror */
++static void ov_rows(int band, void *ctx)
+ {
+-    if (!active || k != enh_scale || !enh_front.out) return;
+-    uint64_t t0 = host_time_ns();
+-    u32 key = enh_palette_key();
+-    if (key != enh_front.pal_key) enh_resolve(&enh_front);
+-    if (key != enh_mirror.pal_key) enh_resolve(&enh_mirror);
+-    int ow = VIEW_W * k;
+-    for (int y = 0; y < VIEW_H; y++) {
+-        const u8 *p[4], *s[4];
+-        for (int n = 0; n < 4; n++) {
+-            p[n] = gfx_vram_plane(n) + (VIEW_Y0 + y) * 40;
+-            s[n] = vram_snap[n] + y * 40;
+-        }
++    (void)ctx;
++    int k = enh_scale, ow = VIEW_W * k;
++    int y0 = VIEW_H * band / OV_BANDS, y1 = VIEW_H * (band + 1) / OV_BANDS;
++    u8 keep[VIEW_W];
++    for (int y = y0; y < y1; y++) {
+         const u8 *cv = cover + y * VIEW_W;
+         const u8 *wr = gfx_screen_written() + (VIEW_Y0 + y) * 40;
+         for (int bx = 0; bx < 40; bx++) {
+             /* drawn on the screen after the road was presented (message boxes, text, cracks, smoke,
+              * GAME OVER, prompts), whether or not the value changed; and any other difference */
+-            u8 changed = (u8)((p[0][bx] ^ s[0][bx]) | (p[1][bx] ^ s[1][bx]) | (p[2][bx] ^ s[2][bx])
+-                              | (p[3][bx] ^ s[3][bx]) | wr[bx]);
+-            for (int b = 0; b < 8; b++) {
+-                int x = bx * 8 + b;
+-                if (cv[x] || (changed & (0x80 >> b))) continue;
+-                const EnhTarget *T = &enh_front;
+-                int sx = x, sy = y;
+-                if (in_mirror(x, y)) {
+-                    T = &enh_mirror;
+-                    sx = x - mirror_x;
+-                    sy = y - mirror_y;
+-                }
+-                for (int j = 0; j < k; j++) {
+-                    u32 *d = px + (size_t)((VIEW_Y0 + y) * k + j) * ow + (size_t)x * k;
+-                    const u32 *src = T->out + (size_t)(sy * k + j) * T->ow + (size_t)sx * k;
+-                    for (int i = 0; i < k; i++) d[i] = src[i];
+-                }
+-            }
++            u8 changed = wr[bx];
++            for (int n = 0; n < 4; n++)
++                changed |= (u8)(gfx_vram_plane(n)[(VIEW_Y0 + y) * 40 + bx] ^ vram_snap[n][y * 40 + bx]);
++            for (int b = 0; b < 8; b++) keep[bx * 8 + b] = !cv[bx * 8 + b] && !(changed & (0x80 >> b));
++        }
++        bool mrow = mirror_x >= 0 && y >= mirror_y && y < mirror_y + MIRROR_H;
++        for (int x = 0; x < VIEW_W;) {
++            if (!keep[x]) { x++; continue; }
++            bool m = mrow && x >= mirror_x && x < mirror_x + MIRROR_W;
++            int end = m ? mirror_x + MIRROR_W : mrow && x < mirror_x ? mirror_x : VIEW_W;
++            if (end > VIEW_W) end = VIEW_W;
++            int e = x + 1;
++            while (e < end && keep[e]) e++;
++            const EnhTarget *T = m ? &enh_mirror : &enh_front;
++            int sx = m ? x - mirror_x : x, sy = m ? y - mirror_y : y;
++            for (int j = 0; j < k; j++)
++                memcpy(ov_px + (size_t)((VIEW_Y0 + y) * k + j) * ow + (size_t)x * k,
++                       T->out + (size_t)(sy * k + j) * T->ow + (size_t)sx * k, (size_t)(e - x) * k * sizeof(u32));
++            x = e;
+         }
+     }
++}
++
++static void ov_draw(u32 *px, int k)
++{
++    if (!active || k != enh_scale || !enh_front.out) return;
++    uint64_t t0 = host_time_ns();
++    u32 key = enh_palette_key();
++    if (key != enh_front.pal_key) enh_resolve(&enh_front);
++    if (key != enh_mirror.pal_key) enh_resolve(&enh_mirror);
++    ov_px = px;
++    host_parallel_for(OV_BANDS, ov_rows, NULL);
+     if (enh_show_position) draw_position(px, k);
+     ov_ns += host_time_ns() - t0;
+ }
+diff --git a/src/enhanced/enhanced.h b/src/enhanced/enhanced.h
+index a471f18..01fcbd7 100644
+--- a/src/enhanced/enhanced.h
++++ b/src/enhanced/enhanced.h
+@@ -16,6 +16,7 @@ extern int enh_scenery_ahead;      /* ENH_SCENERY_AHEAD_MAX, or the original's 7
+ void enh_init(bool enabled, int rows);  /* main.c: overlay installation (enabled = false: --classic) */
+ extern bool enh_show_position;    /* --show-position: the stage code and road unit on the screen (F9) */
+ extern bool enh_valley;           /* --valley: true = on (the valley floor below drop-offs), false = mist */
++extern int enh_supersample;       /* --supersample: road samples per output pixel per axis (0: 2, 4 at --res-scale 1) */
+ extern bool enh_detail_max;       /* --sprite-detail: true = max (the largest sprite variant everywhere) */
+ extern bool enh_road_bands;       /* --enhanced-road: the road and shoulders alternate between two shades */
+ extern bool enh_side_bands;       /* --enhanced-sides: the ground beside the road alternates as well */
+diff --git a/src/main.c b/src/main.c
+index a04b794..b7e0074 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -1,6 +1,7 @@
+ /* Test Drive II Enhanced — entry point.
+  *
+- * usage: testdrive2-enhanced [--game-dir DIR] [--scale N] [--res-scale N] [--draw-distance N]
++ * usage: testdrive2-enhanced [--game-dir DIR] [--scale N] [--res-scale N] [--supersample N]
++ *                            [--draw-distance N]
+  *                            [--frame-rate FPS] [--sim-ticks N] [--sprite-detail max|auto] [--valley on|off]
+  *                            [--show-position on|off] [--enhanced-road on|off] [--enhanced-sides on|off]
+  *                            [--mix-cars on|off]
+@@ -9,6 +10,7 @@
+  *   --game-dir      folder with the original game files (default: "Game" in the working directory)
+  *   --scale         initial window scale (default 3)
+  *   --res-scale     ENH: output resolution as a multiple of 320x200 (default 4, 1..8)
++ *   --supersample   ENH: road samples per output pixel per axis (1..4; default 2, 4 at --res-scale 1)
+  *   --draw-distance ENH: road units drawn by the enhanced renderer (default 180, 60..240)
+  *   --frame-rate    drawing rate while driving (default HOST_DEFAULT_FPS = 60; 0 = unpaced)
+  *   --sim-ticks     ENH: game speed, timer ticks per simulation step (default HOST_DEFAULT_SIM_TICKS = 7; the
+@@ -48,7 +50,7 @@
+ #include "platform/input.h"
+ #include "platform/timer.h"
+ 
+-static const char USAGE[] = "usage: %s [--game-dir DIR] [--scale N] [--res-scale N] [--draw-distance N] "
++static const char USAGE[] = "usage: %s [--game-dir DIR] [--scale N] [--res-scale N] [--supersample N] [--draw-distance N] "
+                             "[--frame-rate FPS] [--sim-ticks N] [--sprite-detail max|auto] [--valley on|off] [--show-position on|off] "
+                             "[--enhanced-road on|off] [--enhanced-sides on|off] [--mix-cars on|off] [--start STAGE|default] "
+                             "[--race clock|opponent] [--car CODE] [--opponent CODE] "
+@@ -72,6 +74,7 @@ int main(int argc, char **argv)
+         if (!strcmp(argv[i], "--game-dir") && i + 1 < argc) dir = argv[++i];
+         else if (!strcmp(argv[i], "--scale") && i + 1 < argc) scale = atoi(argv[++i]);
+         else if (!strcmp(argv[i], "--res-scale") && i + 1 < argc) res_scale = atoi(argv[++i]);
++        else if (!strcmp(argv[i], "--supersample") && i + 1 < argc) enh_supersample = atoi(argv[++i]);
+         else if (!strcmp(argv[i], "--draw-distance") && i + 1 < argc) draw_distance = atoi(argv[++i]);
+         else if (!strcmp(argv[i], "--frame-rate") && i + 1 < argc) frame_rate = atoi(argv[++i]);
+         else if (!strcmp(argv[i], "--sim-ticks") && i + 1 < argc) sim_ticks = atoi(argv[++i]);
+diff --git a/src/platform/gfx.c b/src/platform/gfx.c
+index 969a6d3..6637cfc 100644
+--- a/src/platform/gfx.c
++++ b/src/platform/gfx.c
+@@ -108,27 +108,28 @@ void gfx_set_overlay(bool (*dirty)(void), void (*draw)(u32 *xrgb, int scale))
+     gfx_ega.dirty = true;
+ }
+ 
+-bool gfx_compose(u32 *xrgb)
++#define COMPOSE_BANDS 4
++
++static u32 compose_base[320 * 200];
++static u32 *compose_big;                    /* ENH: base scaled up to the output size */
++static u32 compose_pal[16];
++static u32 *compose_out;
++static bool compose_changed;
++static u8 compose_planes[4][40 * 200];      /* the planes in compose_base */
++static bool compose_full;                   /* the palette or the scale changed: every row again */
++
++static void compose_rows(int band, void *ctx)
+ {
+-    static u32 base[320 * 200];
+-    static u32 *big;                            /* ENH: base scaled up to the output size */
+-    static int big_scale;
+-    int k = out_scale, ow = 320 * k;
+-    if (k > 1 && big_scale != k) {
+-        free(big);
+-        big = malloc((size_t)ow * (size_t)(200 * k) * sizeof *big);
+-        if (!big) return false;
+-        big_scale = k;
+-        gfx_ega.dirty = true;
+-    }
+-    bool base_changed = gfx_ega.dirty;
+-    bool ov_changed = overlay_dirty && overlay_dirty();
+-    if (!base_changed && !ov_changed) return false;
+-    if (base_changed) {
+-        gfx_ega.dirty = false;
+-        u32 pal[16];
+-        for (int i = 0; i < 16; i++) pal[i] = ega_rgb(gfx_ega.palette[i]);
+-        for (int y = 0; y < 200; y++) {
++    (void)ctx;
++    u32 *base = compose_base, *big = compose_big;
++    int k = out_scale, ow = 320 * k, y0 = 200 * band / COMPOSE_BANDS, y1 = 200 * (band + 1) / COMPOSE_BANDS;
++    if (compose_changed) {
++        for (int y = y0; y < y1; y++) {
++            bool same = !compose_full;
++            for (int p = 0; p < 4 && same; p++)
++                same = memcmp(compose_planes[p] + y * 40, gfx_ega.plane[p] + y * 40, 40) == 0;
++            if (same) continue;
++            for (int p = 0; p < 4; p++) memcpy(compose_planes[p] + y * 40, gfx_ega.plane[p] + y * 40, 40);
+             for (int bx = 0; bx < 40; bx++) {
+                 u32 off = (u32)(y * 40 + bx);
+                 u8 p0 = gfx_ega.plane[0][off], p1 = gfx_ega.plane[1][off];
+@@ -136,12 +137,10 @@ bool gfx_compose(u32 *xrgb)
+                 for (int b = 0; b < 8; b++) {
+                     int s = 7 - b;
+                     int idx = (p0 >> s & 1) | (p1 >> s & 1) << 1 | (p2 >> s & 1) << 2 | (p3 >> s & 1) << 3;
+-                    base[y * 320 + bx * 8 + b] = pal[idx];
++                    base[y * 320 + bx * 8 + b] = compose_pal[idx];
+                 }
+             }
+-        }
+-        if (k > 1) {
+-            for (int y = 0; y < 200; y++) {
++            if (k > 1) {
+                 u32 *row = big + (size_t)y * k * ow;
+                 for (int x = 0; x < 320; x++)
+                     for (int i = 0; i < k; i++) row[x * k + i] = base[y * 320 + x];
+@@ -149,8 +148,38 @@ bool gfx_compose(u32 *xrgb)
+             }
+         }
+     }
+-    if (k > 1) memcpy(xrgb, big, (size_t)ow * (size_t)(200 * k) * sizeof *big);
+-    else memcpy(xrgb, base, sizeof base);
++    if (k > 1) memcpy(compose_out + (size_t)(y0 * k) * ow, big + (size_t)(y0 * k) * ow,
++                      (size_t)ow * (size_t)((y1 - y0) * k) * sizeof *big);
++    else memcpy(compose_out + y0 * 320, base + y0 * 320, (size_t)(y1 - y0) * 320 * sizeof *base);
++}
++
++bool gfx_compose(u32 *xrgb)
++{
++    static int big_scale;
++    int k = out_scale, ow = 320 * k;
++    if (k > 1 && big_scale != k) {
++        free(compose_big);
++        compose_big = malloc((size_t)ow * (size_t)(200 * k) * sizeof *compose_big);
++        if (!compose_big) return false;
++        big_scale = k;
++        gfx_ega.dirty = true;
++        compose_full = true;
++    }
++    bool base_changed = gfx_ega.dirty;
++    bool ov_changed = overlay_dirty && overlay_dirty();
++    if (!base_changed && !ov_changed) return false;
++    if (base_changed) {
++        gfx_ega.dirty = false;
++        for (int i = 0; i < 16; i++) {
++            u32 c = ega_rgb(gfx_ega.palette[i]);
++            if (c != compose_pal[i]) compose_full = true;
++            compose_pal[i] = c;
++        }
++    }
++    compose_changed = base_changed;
++    compose_out = xrgb;
++    host_parallel_for(COMPOSE_BANDS, compose_rows, NULL);
++    if (base_changed) compose_full = false;
+     if (overlay_draw) overlay_draw(xrgb, k);
+     return true;
+ }

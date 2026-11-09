@@ -1,0 +1,5 @@
+- Runs at about 55 fps. Set `frame_rate=30` in `ports/testdrive2/testdrive2.conf` for a steadier picture.
+- The four leftmost skill levels shift by themselves. From the fifth on the gearbox is manual: start in neutral, shift into first, and shift up before the needle stays in the red, or the engine blows.
+- On the name screen, Up and Down pick the letter, Left and Right move, A confirms.
+- Select leaves the drive. Select again at the title, then A, quits to the launcher.
+- High scores are in `ports/testdrive2/data/TDS2HISC.DAT`.
