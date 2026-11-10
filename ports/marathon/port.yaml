@@ -1,0 +1,59 @@
+title: Marathon
+catalog: 27
+summary: Bungie's 1994 science fiction shooter on Aleph One, with the complete game.
+tags: [shooter, fps, 3d]
+status: playable
+review: draft
+accent: green
+added: 2026-11-10
+icon: icon.png
+
+engine:
+  name: Aleph One
+  url: https://github.com/Aleph-One-Marathon/alephone
+  commit: fc4c274359088614b58c91af5daa541504cb50cf
+  license: GPL-3.0-or-later
+
+data:
+  kind: included
+  license: Free distribution permitted by Bungie, no formal licence
+  credit: Bungie
+  license_file: ports/marathon/data/Readme.md
+
+controls:
+  - { button: L-stick, action: "Move and sidestep; click to run" }
+  - { button: R-stick, action: "Turn and look; click to recenter" }
+  - { button: R2, action: "Fire" }
+  - { button: L2, action: "Secondary fire" }
+  - { button: L1, action: "Previous weapon" }
+  - { button: R1, action: "Next weapon" }
+  - { button: A, action: "Action (doors, switches, terminals)" }
+  - { button: B, action: "Leave terminal; menu back" }
+  - { button: X, action: "Map" }
+  - { button: Y, action: "Aux trigger" }
+  - { button: dpad, action: "Left/right glance, up/down map zoom" }
+  - { button: START, action: "Menu" }
+
+shots:
+  - { file: shots/menu.png, caption: "Main menu" }
+  - { file: shots/play.png }
+
+licenses:
+  - ports/marathon/LICENSE.txt
+  - ports/marathon/data/Readme.md
+  - ports/marathon/lib/licenses/libopenal1.txt
+  - ports/marathon/lib/licenses/libsndfile1.txt
+  - ports/marathon/lib/licenses/libflac14.txt
+  - ports/marathon/lib/licenses/libopus0.txt
+  - ports/marathon/lib/licenses/libmp3lame0.txt
+  - ports/marathon/lib/licenses/libmpg123-0t64.txt
+  - ports/marathon/lib/licenses/libvorbis0a.txt
+  - ports/marathon/lib/licenses/libvorbisenc2.txt
+  - ports/marathon/lib/licenses/libogg0.txt
+  - ports/marathon/lib/licenses/libboost-filesystem1.83.0.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-10
+    changes:
+      - First release.

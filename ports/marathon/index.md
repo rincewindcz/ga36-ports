@@ -1,0 +1,2 @@
+- Preferences, saves and screenshots are in `.alephone` in the home folder.
+- Pad bindings can be changed in Preferences > Controls.

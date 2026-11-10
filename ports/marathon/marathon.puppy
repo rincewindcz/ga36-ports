@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Marathon
+DESCRIPTION=Marathon (Bungie, Aleph One)
+ICON=/home/player/.local/share/icons/marathon.png
+COMMAND=/home/player/ports/marathon/run.sh
+COLOR=#5bd16e
