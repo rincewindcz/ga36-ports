@@ -54,3 +54,6 @@ releases:
     date: 2026-11-10
     changes:
       - First release.
+    file: descent-2026.11.1.zip
+    size: 3792477
+    sha256: 877b931d576eba9f67b6b030bd1981793fbc827af804828626a61c3b23552848

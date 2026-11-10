@@ -57,3 +57,6 @@ releases:
     date: 2026-11-10
     changes:
       - First release.
+    file: marathon-2026.11.1.zip
+    size: 33896399
+    sha256: 1d6844959f621082ce35c7eb26fe0be4eb19b5f4b7caab4fe704c51f361cfbef
