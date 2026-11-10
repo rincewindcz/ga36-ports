@@ -12,14 +12,19 @@ SYSROOT_DEBS=(libc6 libc6-dev linux-libc-dev libgcc-14-dev libgcc-s1 libstdc++-1
               libsdl2-gfx-dev libsdl2-gfx-1.0-0 libpng-dev libpng16-16t64 zlib1g-dev zlib1g
               libvorbisidec-dev libvorbisidec1 libogg-dev libogg0
               libsdl2-mixer-dev libsdl2-mixer-2.0-0
-              libgles-dev libgles2 libegl-dev libegl1 libgl-dev libglvnd0
+              libgles-dev libgles1 libgles2 libegl-dev libegl1 libgl-dev libglvnd0
               libsdl3-dev libsdl3-0
               libopenal-dev libopenal1 libvorbis-dev libvorbis0a libvorbisfile3 libvorbisenc2
               libjsoncpp-dev libjsoncpp26 libjpeg62-turbo-dev libjpeg62-turbo
               libepoxy-dev libepoxy0 libsdl2-image-dev libsdl2-image-2.0-0
               libopenmpt-dev libopenmpt0t64 libmpg123-0t64
               libjxr-dev libjxr0t64 liblzma-dev liblzma5
-              libsdl2-ttf-dev libsdl2-ttf-2.0-0)
+              libsdl2-ttf-dev libsdl2-ttf-2.0-0
+              libphysfs-dev libphysfs1
+              libboost1.83-dev libboost-filesystem1.83-dev libboost-filesystem1.83.0
+              libboost-system1.83-dev libboost-atomic1.83-dev libasio-dev
+              libsndfile1-dev libsndfile1 libflac-dev libflac14 libopus-dev libopus0 libmpg123-dev
+              libmp3lame0)
 CROSS_FLAGS="--target=arm-linux-gnueabihf --sysroot=$SYSROOT -march=armv7-a -mcpu=cortex-a7 -mfpu=neon-vfpv4 -mfloat-abi=hard"
 CROSS_CC="clang $CROSS_FLAGS"
 CROSS_CXX="clang++ $CROSS_FLAGS"

@@ -1,0 +1,60 @@
+title: Descent II
+catalog: 26
+summary: Parallax Software's 1996 sequel on D2X-Rebirth.
+tags: [shooter, 3d]
+status: playable
+review: draft
+accent: blue
+added: 2026-11-10
+icon: icon.png
+
+engine:
+  name: DXX-Rebirth
+  url: https://github.com/dxx-rebirth/dxx-rebirth
+  commit: 56aa6210b2066aca761619a9d2fdf8585137aba8
+  license: GPL-3.0-only with the Parallax licence
+
+data:
+  kind: user
+  sources:
+    - name: GOG
+      url: https://www.gog.com/game/descent_2
+    - name: Steam
+      url: https://store.steampowered.com/app/273580/Descent_2/
+    - name: Descent 2 demo (free, 3 levels)
+      url: https://icculus.org/d2x/data/d2shar10.tar.gz
+      free: true
+  files:
+    - { from: "descent2.hog, descent2.ham, descent2.s22, *.pig", to: ports/descent2/data/ }
+    - { from: "intro-h.mvl, other-h.mvl, robots-h.mvl (movies, optional)", to: ports/descent2/data/ }
+    - { from: "d2demo.hog, d2demo.ham, d2demo.pig (demo)", to: ports/descent2/data/ }
+
+controls:
+  - { button: L-stick, action: "Thrust and slide left/right" }
+  - { button: R-stick, action: "Pitch and turn" }
+  - { button: R2, action: "Fire primary" }
+  - { button: L2, action: "Fire secondary" }
+  - { button: L1, action: "Bank left" }
+  - { button: R1, action: "Bank right" }
+  - { button: A, action: "Afterburner; menu confirm" }
+  - { button: B, action: "Drop bomb; menu back" }
+  - { button: X, action: "Rear view" }
+  - { button: Y, action: "Fire flare" }
+  - { button: dpad, action: "Left/right cycle primary/secondary, up headlight, down automap; menu navigation" }
+  - { button: START, action: "Pause" }
+  - { button: SELECT, action: "Menu" }
+
+shots:
+  - { file: shots/menu.png, caption: "Main menu" }
+  - { file: shots/play.png }
+
+licenses:
+  - ports/descent2/LICENSE.txt
+  - ports/descent2/GPL-3.txt
+  - ports/descent2/lib/licenses/libphysfs1.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-10
+    changes:
+      - First release.

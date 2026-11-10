@@ -25,13 +25,15 @@ ship the engine and say where to get the data legally.
 | `lib/love-runtime.sh` | LÖVE 11.5 runtime with its libraries and license notices |
 | `lib/gl4es.sh` | gl4es (OpenGL 1.x over GLES 2) |
 | `lib/nblood.sh`, `lib/nblood-*.patch` | NBlood checkout and build shared by Blood and Powerslave |
+| `lib/dxx.sh`, `lib/dxx-*.patch` | DXX-Rebirth checkout and SCons build shared by Descent and Descent 2 |
 | `tools/package.py` | checks a stage tree against `port.yaml` and packs `build/dist/<id>-<version>.zip` |
 | `tools/drmshot.c`, `padd.c`, `glos.py` | on-device screenshot, virtual pad, serial console client |
 
 ## Build and package
 
 Requirements: bash, clang, lld, llvm-strip, cmake, curl, gpgv with the Debian archive keyring, xz,
-zip, Python 3 with PyYAML. Some ports need more (ImageMagick, 7-Zip, a JDK).
+zip, Python 3 with PyYAML. Some ports need more (ImageMagick, 7-Zip, a JDK, autoconf and automake; DXX-Rebirth
+installs SCons from PyPI into `build/scons`).
 
 ```sh
 ports/lugaru/build.sh

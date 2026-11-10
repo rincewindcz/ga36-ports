@@ -1,0 +1,19 @@
+diff --git a/similar/main/inferno.cpp b/similar/main/inferno.cpp
+index 00b46f0..022b916 100644
+--- a/similar/main/inferno.cpp
++++ b/similar/main/inferno.cpp
+@@ -384,13 +384,7 @@ window_event_result standard_handler(const d_event &event)
+ 					return window_event_result::handled;	// finished quitting
+ 
+ 				if (wind == Game_wind)
+-				{
+-					const auto choice = nm_messagebox_str(menu_title{nullptr}, nm_messagebox_tie(TXT_YES, TXT_NO), menu_subtitle{TXT_ABORT_GAME});
+-					if (choice != 0)
+-						return window_event_result::handled;	// aborted quitting
+-					else
+-						CGameArg.SysAutoDemo = false;
+-				}
++					CGameArg.SysAutoDemo = false;
+ 
+ 				// Close front window, let the code flow continue until all windows closed or quit cancelled
+ 				if (!window_close(wind))

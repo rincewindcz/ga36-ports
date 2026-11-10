@@ -1,0 +1,15 @@
+diff --git a/similar/main/menu.cpp b/similar/main/menu.cpp
+index 2a23deb..429ddba 100644
+--- a/similar/main/menu.cpp
++++ b/similar/main/menu.cpp
+@@ -469,6 +469,10 @@ static int MakeNewPlayerFile(int allow_abort)
+ 	char filename[PATH_MAX];
+ 	auto text = InterfaceUniqueState.PilotName;
+ 
++	/* The first start takes the suggested name without a prompt: the pad has no
++	 * text entry, and a launcher quit cannot end a prompt that may not be aborted.
++	 */
++	if (allow_abort || !*static_cast<const char *>(text))
+ 	for (;;)
+ 	{
+ 		using items_type = std::array<newmenu_item, 1>;

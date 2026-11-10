@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Descent II
+DESCRIPTION=Descent II (Parallax Software, D2X-Rebirth)
+ICON=/home/player/.local/share/icons/descent2.png
+COMMAND=/home/player/ports/descent2/run.sh
+COLOR=#4f8cff

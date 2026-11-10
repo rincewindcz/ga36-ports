@@ -1,0 +1,5 @@
+- The shareware episode is unpacked from the bundled, unmodified `desc14sw.tar.gz` on the first start.
+- Settings, pilots and saves are in `ports/descent/data`. The screen mode is written to `descent.cfg` only when it is missing.
+- Pad bindings are per pilot and can be changed in Options > Controls.
+- The first start creates the pilot `player` without asking for a name; more pilots can be made in Change Pilots.
+- Music is silent: the MIDI music needs a synthesizer the port does not include.

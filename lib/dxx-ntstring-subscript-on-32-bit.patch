@@ -1,0 +1,22 @@
+diff --git a/similar/main/newmenu.cpp b/similar/main/newmenu.cpp
+index 484af26..594cbcd 100644
+--- a/similar/main/newmenu.cpp
++++ b/similar/main/newmenu.cpp
+@@ -1019,7 +1019,7 @@ static window_event_result newmenu_mouse(const d_event &event, newmenu *menu, co
+ 						 * saved_text if the caller pre-populated it,
+ 						 * otherwise clear.
+ 						 */
+-						if (im.saved_text[0])
++						if (im.saved_text.front())
+ 							strcpy(citem.text, im.saved_text);
+ 						else
+ 							citem.text[0] = 0;
+@@ -1177,7 +1177,7 @@ static window_event_result newmenu_key_command(const d_event &event, newmenu *co
+ 					 * saved_text if the caller pre-populated it,
+ 					 * otherwise clear.
+ 					 */
+-					if (im.saved_text[0])
++					if (im.saved_text.front())
+ 						strcpy(citem.text, im.saved_text);
+ 					else
+ 						citem.text[0] = 0;

@@ -1,0 +1,7 @@
+[ENTRY]
+CATEGORY=Ports
+NAME=Descent
+DESCRIPTION=Descent (Parallax Software, D1X-Rebirth)
+ICON=/home/player/.local/share/icons/descent.png
+COMMAND=/home/player/ports/descent/run.sh
+COLOR=#2ec4b6

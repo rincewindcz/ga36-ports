@@ -1,0 +1,56 @@
+title: Descent
+catalog: 25
+summary: Parallax Software's 1995 six-degrees-of-freedom shooter on D1X-Rebirth, with the shareware episode.
+tags: [shooter, 3d]
+status: playable
+review: draft
+accent: teal
+added: 2026-11-10
+icon: icon.png
+
+engine:
+  name: DXX-Rebirth
+  url: https://github.com/dxx-rebirth/dxx-rebirth
+  commit: 56aa6210b2066aca761619a9d2fdf8585137aba8
+  license: GPL-3.0-only with the Parallax licence
+
+data:
+  kind: included
+  license: Descent shareware licence
+  credit: Parallax Software
+  license_file: ports/descent/shareware/README.TXT
+
+install:
+  - "The shareware episode is unpacked from the bundled, unmodified `desc14sw.tar.gz` on the first start."
+  - "Full version: copy `descent.hog` and `descent.pig` from the DOS CD, GOG or Steam release to `ports/descent/data/`, replacing the shareware files."
+
+controls:
+  - { button: L-stick, action: "Thrust and slide left/right" }
+  - { button: R-stick, action: "Pitch and turn" }
+  - { button: R2, action: "Fire primary" }
+  - { button: L2, action: "Fire secondary" }
+  - { button: L1, action: "Bank left" }
+  - { button: R1, action: "Bank right" }
+  - { button: A, action: "Menu confirm" }
+  - { button: B, action: "Drop bomb; menu back" }
+  - { button: X, action: "Rear view" }
+  - { button: Y, action: "Fire flare" }
+  - { button: dpad, action: "Left/right cycle primary/secondary, down automap; menu navigation" }
+  - { button: START, action: "Pause" }
+  - { button: SELECT, action: "Menu" }
+
+shots:
+  - { file: shots/menu.png, caption: "Main menu" }
+  - { file: shots/play.png }
+
+licenses:
+  - ports/descent/LICENSE.txt
+  - ports/descent/GPL-3.txt
+  - ports/descent/shareware/README.TXT
+  - ports/descent/lib/licenses/libphysfs1.txt
+
+releases:
+  - version: 2026.11.1
+    date: 2026-11-10
+    changes:
+      - First release.
